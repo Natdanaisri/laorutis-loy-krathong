@@ -16,17 +16,73 @@ body, html {
 
 #app-container {
   width: 100%;
-  height: 95%;
-  
-  /* --- นี่คือส่วนที่แก้ไขครับ --- */
-  /* ของเดิม: background-image: url('https://img5.pic.in.th/file/secure-sv1/------daecaa444628edcc.png'); */
-  /* ของใหม่: (สมมติว่าครูไบร์ทจะสร้างโฟลเดอร์ images และใส่ไฟล์ชื่อ background.png) */
-  background-image: url('images/background.png');
-  /* -------------------------- */
-
-  background-size: cover;
-  background-position: center;
+  height: 100%; /* <-- แก้ไข: ให้พื้นหลังเต็มความสูงของหน้าจอ */
   position: relative;
+  /* --- เพิ่มเติม: ดัน container ลงมาเล็กน้อยเพื่อให้เห็นท้องฟ้าด้านบน --- */
+  /* เราใช้ padding-top เพื่อให้เนื้อหาข้างใน (เช่น แม่น้ำ) ถูกดันลงมา */
+  /* แต่ยังคงให้ background-image เริ่มจากขอบบนสุดของ container */
+  padding-top: 10vh; /* ดันเนื้อหาลงมา 10% ของความสูงหน้าจอ */
+  box-sizing: border-box; /* ทำให้ padding ไม่ไปเพิ่มความสูงของ container */
+}
+
+/* ===== ส่วนที่เพิ่มเข้ามาสำหรับวิดีโอพื้นหลัง ===== */
+#background-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill; /* ทำให้วิดีโอเต็มพื้นที่โดยการยืด (อาจเสียสัดส่วน) */
+  z-index: 0; /* จัดให้อยู่หลังสุด */
+  pointer-events: none; /* ทำให้คลิกทะลุได้ */
+}
+
+/* ===== ส่วนที่เพิ่มเข้ามาสำหรับดาวระยิบระยับ ===== */
+@keyframes twinkle {
+  0%, 100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+#twinkling-stars {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 60%; /* ให้ดาวแสดงในพื้นที่ 60% บนของท้องฟ้า */
+  pointer-events: none; /* ทำให้คลิกทะลุได้ */
+  overflow: hidden; /* ป้องกันดาวล้นออกนอกพื้นที่ */
+  z-index: 1; /* --- แก้ไข: กำหนด z-index ให้ดาวอยู่เหนือวิดีโอพื้นหลัง --- */
+}
+
+.star {
+  position: absolute;
+  background-color: #FFF;
+  border-radius: 50%;
+  box-shadow: 0 0 8px 2px rgba(255, 255, 224, 0.8); /* แสงฟุ้งๆ สีเหลืองนวล */
+  animation: twinkle 4s infinite ease-in-out;
+}
+
+/* สร้างดาว 3 ชุด และกำหนดตำแหน่ง, ขนาด, และหน่วงเวลาที่ต่างกัน */
+.star:nth-child(1) {
+  width: 2px; height: 2px;
+  top: 15%; left: 20%;
+  animation-delay: 0s;
+}
+.star:nth-child(2) {
+  width: 3px; height: 3px;
+  top: 30%; left: 80%;
+  animation-delay: 1.5s;
+}
+.star:nth-child(3) {
+  width: 1px; height: 1px;
+  top: 45%; left: 50%;
+  animation-delay: 3s;
 }
 
 #river {
@@ -36,12 +92,13 @@ body, html {
   width: 100%;
   height: 50%; /* ปรับความสูงเป็นครึ่งหน้าจอ */
   pointer-events: none;
+  z-index: 5; /* --- แก้ไข: กำหนด z-index ให้แม่น้ำอยู่เหนือดาว --- */
 }
 
 .floating-krathong-wrapper { /* New wrapper for krathong image and text */
   position: absolute;
   bottom: -50px;
-  width: 240px;
+  width: 204px; /* <-- เพิ่มขนาดขึ้น 20% (จาก 170px) */
   height: auto;
   /* ใช้ animation floatAcross (กำหนดใน JS) สำหรับการลอยไปตามน้ำ */
   animation: floatAcross 80s linear infinite;
@@ -94,25 +151,25 @@ body, html {
 
 @keyframes floatAcross {
   0% {
-    transform: translateX(-150px) rotate(-5deg) scale(0.9); /* Apply to wrapper */
+    transform: translateX(-204px) rotate(-5deg) scale(0.9); /* Apply to wrapper */
   }
   50% {
-     transform: translateX(calc(50vw - 60px)) rotate(5deg) scale(1);
+     transform: translateX(calc(50vw - 102px)) rotate(5deg) scale(1);
   }
   100% {
-    transform: translateX(calc(100vw + 150px)) rotate(-5deg) scale(0.9);
+    transform: translateX(calc(100vw + 204px)) rotate(-5deg) scale(0.9);
   }
 }
 
 @keyframes floatAcrossReverse {
   0% {
-    transform: translateX(calc(100vw + 150px)) rotate(5deg) scale(0.9);
+    transform: translateX(calc(100vw + 204px)) rotate(5deg) scale(0.9);
   }
   50% {
-     transform: translateX(calc(50vw - 60px)) rotate(-5deg) scale(1);
+     transform: translateX(calc(50vw - 102px)) rotate(-5deg) scale(1);
   }
   100% {
-    transform: translateX(-150px) rotate(5deg) scale(0.9);
+    transform: translateX(-204px) rotate(5deg) scale(0.9);
   }
 }
 
@@ -152,6 +209,27 @@ body, html {
 #create-krathong-btn:hover {
   transform: translateX(-50%) scale(1.05);
   box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+/* Krathong Counter Styling */
+#krathong-counter {
+  position: fixed;
+  bottom: 100px; /* วางไว้เหนือปุ่มสร้างกระทง (30px + 70px) */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 8px 18px;
+  border-radius: 20px;
+  font-size: 1em;
+  z-index: 999;
+  text-align: center;
+  backdrop-filter: blur(3px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  gap: 8px; /* ระยะห่างระหว่างข้อความและตัวเลข */
+  white-space: nowrap; /* ป้องกันการตัดข้อความ */
 }
 
 /* Modal Styling */
@@ -311,5 +389,12 @@ textarea {
   #create-krathong-btn {
     font-size: 1em;
     padding: 12px 24px;
+  }
+  #krathong-counter {
+    width: 90%;
+    justify-content: center;
+    font-size: 0.9em;
+    bottom: 90px; /* ปรับตำแหน่งสำหรับมือถือ */
+    padding: 8px 10px;
   }
 }

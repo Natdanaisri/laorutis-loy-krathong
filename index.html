@@ -11,6 +11,19 @@
 
   <!-- Main App Container -->
   <div id="app-container">
+    <!-- ===== ส่วนที่เพิ่มเข้ามาสำหรับวิดีโอพื้นหลัง ===== -->
+    <video autoplay loop muted playsinline id="background-video">
+      <source src="videos/background.mp4" type="video/mp4">
+      เบราว์เซอร์ของคุณไม่รองรับวิดีโอ
+    </video>
+
+    <!-- ===== ส่วนที่เพิ่มเข้ามาสำหรับดาวระยิบระยับ ===== -->
+    <div id="twinkling-stars">
+      <div class="star"></div>
+      <div class="star"></div>
+      <div class="star"></div>
+      <!-- สามารถเพิ่ม <div class="star"></div> ได้อีกตามต้องการ -->
+    </div>
     <div id="river">
       <!-- Krathongs will float here -->
     </div>
@@ -18,6 +31,13 @@
 
   <!-- Create Button -->
   <button id="create-krathong-btn">✨ ร่วมลอยกระทงกับสาธิตฯ ลำปาง</button>
+
+  <!-- Krathong Counter -->
+  <div id="krathong-counter">
+    <span id="counter-text">จำนวนผู้ร่วมลอยกระทงกับสาธิตละอออุทิศ</span>
+    <span id="counter-number">0</span>
+    <span>คน</span>
+  </div>
 
   <!-- Modal 1: Create Krathong -->
   <div id="create-modal" class="modal">

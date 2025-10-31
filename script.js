@@ -9,7 +9,8 @@ import {
     query, 
     orderBy, 
     limit,
-    serverTimestamp
+    serverTimestamp,
+    connectFirestoreEmulator
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 // 2. ใช้ firebaseConfig ของครูไบร์ทที่ให้มา
@@ -28,27 +29,35 @@ const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const krathongCollectionRef = collection(db, "krathongs"); // อ้างอิงถึง Collection 'krathongs'
 
+// --- ‼️ ส่วนเพิ่มเติม: การเชื่อมต่อกับ Emulator ‼️ ---
+// เช็คว่า hostname เป็น localhost หรือ 127.0.0.1 หรือไม่
+// เพื่อให้โค้ดนี้ทำงานเฉพาะตอนที่เราทดสอบบนเครื่องตัวเองเท่านั้น
+if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+  console.log("กำลังเชื่อมต่อกับ Firestore Emulator...");
+  connectFirestoreEmulator(db, 'localhost', 8080);
+}
+
 // --- Configuration ---
 //
 // --- ‼️ แก้ไขลิงก์รูปภาพที่นี่ครับ ‼️ ---
 //
 // ผมได้เปลี่ยนลิงก์รูปภาพตัวอย่างที่หมดอายุ (404 Not Found)
-// เป็นลิงก์รูปภาพ placeholder ชุดใหม่ที่ใช้งานได้แน่นอนครับ
+// ให้เป็นที่อยู่ของไฟล์รูปภาพกระทงในเครื่องของคุณ
 //
 const KRATHONG_IMAGES = [
-  'https://placehold.co/100x100/8E44AD/white?text=กระทง+1', // 1
-  'https://placehold.co/100x100/2980B9/white?text=กระทง+2', // 2
-  'https://placehold.co/100x100/27AE60/white?text=กระทง+3', // 3
-  'https://placehold.co/100x100/16A085/white?text=กระทง+4', // 4
-  'https://placehold.co/100x100/F1C40F/black?text=กระทง+5', // 5
-  'https://placehold.co/100x100/E67E22/white?text=กระทง+6', // 6
-  'https://placehold.co/100x100/D35400/white?text=กระทง+7', // 7
-  'https://placehold.co/100x100/C0392B/white?text=กระทง+8', // 8
-  'https://placehold.co/100x100/34495E/white?text=กระทง+9', // 9
-  'https://placehold.co/100x100/7F8C8D/white?text=กระทง+10'  // 10
+  'images/krathong-01.png', // 1
+  'images/krathong-02.png', // 2
+  'images/krathong-03.png', // 3
+  'images/krathong-04.png', // 4
+  'images/krathong-05.png', // 5
+  'images/krathong-06.png', // 6
+  'images/krathong-07.png', // 7
+  'images/krathong-08.png', // 8
+  'images/krathong-09.png', // 9
+  'images/krathong-10.png'  // 10
 ];
 let selectedKrathongType = null;
-let krathongData = {};
+let currentKrathongData = {}; // เปลี่ยนชื่อเพื่อความชัดเจน และจะใช้เก็บข้อมูลชั่วคราว
 
 // --- Fireworks Configuration ---
 const FIREWORKS_ENABLED = true; // เปิด/ปิดพลุดอกไม้ไฟ
@@ -202,6 +211,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const selectionGrid = document.getElementById('krathong-selection-grid');
   const submitBtn = document.getElementById('submit-krathong-btn');
   const floatBtn = document.getElementById('float-krathong-btn');
+  const counterNumberElem = document.getElementById('counter-number');
   
   // --- Populate Krathong Selection ---
   KRATHONG_IMAGES.forEach((src, index) => {
@@ -234,17 +244,25 @@ document.addEventListener('DOMContentLoaded', (event) => {
     });
   });
 
-  submitBtn.addEventListener('click', handleFormSubmit);
-  floatBtn.addEventListener('click', saveAndFloatKrathong);
+  submitBtn.addEventListener('click', () => {
+    const data = handleFormSubmit();
+    if (data) {
+      currentKrathongData = data; // เก็บข้อมูลที่ได้จากฟอร์มไว้ชั่วคราว
+    }
+  });
+  floatBtn.addEventListener('click', () => saveAndFloatKrathong(currentKrathongData));
   
   // --- Functions ---
   
   function listenForKrathongs() {
     // สร้าง query เพื่อดึงข้อมูล 100 รายการล่าสุด
-    const q = query(krathongCollectionRef, orderBy("timestamp", "desc"), limit(100));
+    const q = query(krathongCollectionRef, orderBy("timestamp", "desc"));
 
     // onSnapshot คือการ "ดักฟัง" ข้อมูลแบบ Real-time
     onSnapshot(q, (snapshot) => {
+      // อัปเดตจำนวนกระทงทั้งหมด
+      counterNumberElem.textContent = snapshot.size;
+
       snapshot.docChanges().forEach((change) => {
         // เมื่อมีกระทง "ถูกเพิ่ม" (added)
         if (change.type === "added") {
@@ -314,41 +332,41 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     if (!selectedKrathongType) {
       alert('กรุณาเลือกแบบกระทง');
-      return;
+      return null;
     }
     if (!name || !wish) {
       alert('กรุณากรอกชื่อและคำอธิษฐาน');
-      return;
+      return null;
     }
-
-    // Store data temporarily
-    krathongData = { 
-      name, 
-      wish, 
-      krathongType: selectedKrathongType.type,
-      timestamp: serverTimestamp() // ใช้ฟังก์ชัน serverTimestamp ที่ import มา
-    };
 
     // Update and show preview modal
     document.getElementById('preview-krathong-img').src = selectedKrathongType.src;
     document.getElementById('preview-wish-text').textContent = `"${wish}"`;
     document.getElementById('preview-name-text').textContent = `- ${name} -`;
-    
+
     createModal.style.display = 'none';
     previewModal.style.display = 'block';
+
+    // Return data object
+    return {
+      name,
+      wish,
+      krathongType: selectedKrathongType.type,
+      timestamp: serverTimestamp()
+    };
   }
 
-  async function saveAndFloatKrathong() {
+  async function saveAndFloatKrathong(dataToSave) {
     floatBtn.disabled = true;
     floatBtn.textContent = 'กำลังปล่อย...';
+
+    // ซ่อน Modal และแสดง Toast ทันทีเพื่อให้ผู้ใช้รู้สึกว่าระบบตอบสนอง
+    previewModal.style.display = 'none';
+    showToast();
     
     try {
       // บันทึกข้อมูลลง Firestore ด้วยฟังก์ชัน addDoc
-      await addDoc(krathongCollectionRef, krathongData);
-      
-      // เมื่อบันทึกสำเร็จ (listener จะจับได้และแสดงผลกระทงเอง)
-      previewModal.style.display = 'none';
-      showToast();
+      await addDoc(krathongCollectionRef, dataToSave);
       
       // Reset form
       document.getElementById('user-name').value = '';
@@ -375,9 +393,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
   function animateFireworks() {
     requestAnimationFrame(animateFireworks);
 
-    // ล้าง Canvas ด้วยสีดำโปร่งแสงเล็กน้อยเพื่อสร้างเอฟเฟกต์หางพลุ
-    fireworksCtx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-    fireworksCtx.fillRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
+    // ล้าง Canvas ให้โปร่งใสทั้งหมดในทุกเฟรม
+    fireworksCtx.clearRect(0, 0, fireworksCanvas.width, fireworksCanvas.height);
 
     // ยิงพลุใหม่หากถึงช่วงเวลาที่กำหนด
     const currentTime = Date.now();
