@@ -43,9 +43,8 @@ body, html {
   bottom: -50px;
   width: 240px;
   height: auto;
-  /* ใช้ 2 animations: floatAcross (กำหนดใน JS) และ bobbing (กำหนดที่นี่) */
-  animation: floatAcross 80s linear infinite, bobbing 7s ease-in-out infinite;
-  animation-timing-function: linear;
+  /* ใช้ animation floatAcross (กำหนดใน JS) สำหรับการลอยไปตามน้ำ */
+  animation: floatAcross 80s linear infinite;
   transform-origin: center bottom;
   opacity: 0.9;
   display: flex; /* Use flexbox for centering content */
@@ -60,6 +59,8 @@ body, html {
 .floating-krathong-wrapper img { /* Style for the actual krathong image inside the wrapper */
   width: 100%;
   height: auto;
+  /* เพิ่ม animation bobbing ที่ตัวรูปกระทงโดยตรง */
+  animation: bobbing 7s ease-in-out infinite;
   display: block; /* Remove extra space below image */
 }
 
