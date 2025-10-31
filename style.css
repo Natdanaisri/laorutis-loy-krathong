@@ -1,0 +1,314 @@
+:root {
+  --primary-font: 'Kanit', sans-serif;
+  --modal-bg: rgba(255, 255, 255, 0.95);
+  --dark-text: #333;
+  --primary-color: #ff9800;
+}
+
+body, html {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--primary-font);
+}
+
+#app-container {
+  width: 100%;
+  height: 95%;
+  
+  /* --- นี่คือส่วนที่แก้ไขครับ --- */
+  /* ของเดิม: background-image: url('https://img5.pic.in.th/file/secure-sv1/------daecaa444628edcc.png'); */
+  /* ของใหม่: (สมมติว่าครูไบร์ทจะสร้างโฟลเดอร์ images และใส่ไฟล์ชื่อ background.png) */
+  background-image: url('images/background.png');
+  /* -------------------------- */
+
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+#river {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 50%; /* ปรับความสูงเป็นครึ่งหน้าจอ */
+  pointer-events: none;
+}
+
+.floating-krathong-wrapper { /* New wrapper for krathong image and text */
+  position: absolute;
+  bottom: -50px;
+  width: 240px;
+  height: auto;
+  /* ใช้ 2 animations: floatAcross (กำหนดใน JS) และ bobbing (กำหนดที่นี่) */
+  animation: floatAcross 80s linear infinite, bobbing 7s ease-in-out infinite;
+  animation-timing-function: linear;
+  transform-origin: center bottom;
+  opacity: 0.9;
+  display: flex; /* Use flexbox for centering content */
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding-bottom: 10px; /* Adjust if krathong image has padding */
+  z-index: 10; /* Ensure krathongs are above waves */
+}
+
+.floating-krathong-wrapper img { /* Style for the actual krathong image inside the wrapper */
+  width: 100%;
+  height: auto;
+  display: block; /* Remove extra space below image */
+}
+
+.krathong-name, .krathong-wish {
+  position: absolute;
+  color: white; /* หรือสีที่ตัดกับรูปกระทง */
+  font-size: 0.7em;
+  font-weight: 500;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
+  width: 90%; /* Constrain text width */
+  word-wrap: break-word; /* Break long words */
+  pointer-events: none; /* Ensure clicks pass through to the krathong if needed */
+}
+
+.krathong-name {
+  top: 60%; /* ปรับตำแหน่งตามความเหมาะสมกับรูปกระทง */
+  transform: translateX(-50%);
+  left: 50%;
+}
+
+.krathong-wish {
+  top: 75%; /* ปรับตำแหน่งตามความเหมาะสมกับรูปกระทง */
+  transform: translateX(-50%);
+  left: 50%;
+  font-size: 0.6em;
+  font-style: italic;
+  opacity: 0.8;
+}
+
+
+
+@keyframes floatAcross {
+  0% {
+    transform: translateX(-150px) rotate(-5deg) scale(0.9); /* Apply to wrapper */
+  }
+  50% {
+     transform: translateX(calc(50vw - 60px)) rotate(5deg) scale(1);
+  }
+  100% {
+    transform: translateX(calc(100vw + 150px)) rotate(-5deg) scale(0.9);
+  }
+}
+
+@keyframes floatAcrossReverse {
+  0% {
+    transform: translateX(calc(100vw + 150px)) rotate(5deg) scale(0.9);
+  }
+  50% {
+     transform: translateX(calc(50vw - 60px)) rotate(-5deg) scale(1);
+  }
+  100% {
+    transform: translateX(-150px) rotate(5deg) scale(0.9);
+  }
+}
+
+/* Animation ใหม่สำหรับการโยกตัวบนคลื่น */
+@keyframes bobbing {
+  0% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-8px) rotate(3deg); /* ขยับขึ้นและหมุนเล็กน้อย */
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+
+
+#create-krathong-btn {
+  position: fixed;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 15px 30px;
+  font-size: 1.2em;
+  font-family: var(--primary-font);
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  transition: all 0.3s ease;
+  z-index: 1000;
+}
+
+#create-krathong-btn:hover {
+  transform: translateX(-50%) scale(1.05);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+}
+
+/* Modal Styling */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 2000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.6);
+  backdrop-filter: blur(5px);
+  animation: fadeIn 0.5s;
+}
+
+.modal-content {
+  background-color: var(--modal-bg);
+  margin: 10% auto;
+  padding: 30px;
+  border-radius: 15px;
+  width: 80%;
+  max-width: 500px;
+  box-shadow: 0 5px 25px rgba(0,0,0,0.2);
+  position: relative;
+  text-align: center;
+}
+
+.preview-content {
+  max-width: 400px;
+}
+
+.close-btn {
+  color: #aaa;
+  position: absolute;
+  top: 15px;
+  right: 25px;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* Form Elements */
+#krathong-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 15px;
+  margin: 20px 0;
+}
+
+.krathong-option {
+  width: 100%;
+  cursor: pointer;
+  border: 3px solid transparent;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+}
+
+.krathong-option.selected {
+  border-color: var(--primary-color);
+  transform: scale(1.1);
+}
+
+input[type="text"], textarea {
+  width: 95%;
+  padding: 12px;
+  margin: 10px 0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-family: var(--primary-font);
+  font-size: 1em;
+}
+
+textarea {
+  resize: vertical;
+  height: 80px;
+}
+
+#submit-krathong-btn, #float-krathong-btn {
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  margin-top: 20px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  border-radius: 8px;
+  font-size: 1.1em;
+  font-family: var(--primary-font);
+}
+
+/* Preview Area */
+#preview-area {
+  padding: 20px;
+  background: rgba(0,0,0,0.05);
+  border-radius: 10px;
+}
+#preview-krathong-img {
+  max-width: 150px;
+}
+#preview-wish-text {
+  font-size: 1.1em;
+  margin: 15px 0;
+}
+#preview-name-text {
+  font-weight: 500;
+}
+.capture-note {
+  font-size: 0.9em;
+  color: #555;
+  margin-top: 15px;
+}
+
+/* Toast Notification */
+#toast-notification {
+  visibility: hidden;
+  min-width: 250px;
+  background-color: #333;
+  color: #fff;
+  text-align: center;
+  border-radius: 5px;
+  padding: 16px;
+  position: fixed;
+  z-index: 3000;
+  left: 50%;
+  bottom: 30px;
+  transform: translateX(-50%);
+  font-size: 17px;
+}
+
+#toast-notification.show {
+  visibility: visible;
+  animation: fadeIn 0.5s, fadeOut 0.5s 2.5s;
+}
+
+/* Fireworks Canvas Styling */
+#fireworks-canvas {
+  position: fixed; /* ใช้ fixed เพื่อให้ครอบคลุม viewport */
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 25%; /* ครอบคลุม 25% ด้านบนของหน้าจอ */
+  z-index: 100; /* ให้แสดงผลอยู่เหนือกระทง (z-index: 10) แต่ต่ำกว่า Modal (z-index: 2000) */
+  pointer-events: none; /* ทำให้คลิกทะลุ canvas ไปยังองค์ประกอบด้านล่างได้ */
+}
+
+@keyframes fadeIn { from { bottom: 0; opacity: 0; } to { bottom: 30px; opacity: 1; } }
+@keyframes fadeOut { from { bottom: 30px; opacity: 1; } to { bottom: 0; opacity: 0; } }
+
+@media (max-width: 600px) {
+  .modal-content {
+    width: 90%;
+    margin: 15% auto;
+    padding: 20px;
+  }
+  #create-krathong-btn {
+    font-size: 1em;
+    padding: 12px 24px;
+  }
+}
