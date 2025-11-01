@@ -154,7 +154,10 @@ body, html {
   align-items: center;
   text-align: center;
   padding-bottom: 10px; /* Adjust if krathong image has padding */
-  z-index: 10; /* Ensure krathongs are above waves */
+  /* --- ‼️ แก้ไข: z-index จะถูกกำหนดโดย JS ตามเลน --- */
+  /* z-index: 10; */ 
+  /* --- ‼️ เพิ่มเติม: ทำให้คลิกทะลุพื้นที่ว่างรอบๆ รูปกระทงได้ --- */
+  pointer-events: none;
 }
 
 /* --- ปรับขนาดและ animation สำหรับจอแนวตั้ง --- */
@@ -181,6 +184,8 @@ body, html {
   width: 100%; /* ‼️ แก้ไข: ปรับขนาดรูปให้พอดีกับกรอบ เพื่อให้ตำแหน่งข้อความถูกต้อง */
   height: auto;
   /* เพิ่ม animation bobbing ที่ตัวรูปกระทงโดยตรง */
+  /* --- ‼️ เพิ่มเติม: ทำให้สามารถคลิกที่รูปกระทงได้ (แต่ไม่คลิกพื้นที่ว่าง) --- */
+  pointer-events: auto;
   animation: bobbing 7s ease-in-out infinite;
   display: block; /* Remove extra space below image */
 }

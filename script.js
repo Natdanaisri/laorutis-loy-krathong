@@ -90,6 +90,10 @@ let laneOccupancy = new Array(NUMBER_OF_LANES).fill(0); // ติดตามจ
 
 let displayedKrathongs = []; // Array สำหรับเก็บคิวของกระทงที่แสดงอยู่
 
+// --- ‼️‼️ ส่วนเพิ่มเติม: คลังสำหรับสุ่มกระทง Community ‼️‼️ ---
+let allKrathongIds = []; // เก็บ ID กระทงทั้งหมด
+let communityKrathongPool = []; // คลัง ID ที่ยังไม่ได้สุ่มแสดง
+
 let fireworks = []; // อาร์เรย์เก็บพลุที่กำลังทำงาน
 let particles = []; // อาร์เรย์เก็บอนุภาคที่กำลังทำงาน
 let lastFireworkTime = 0; // เวลาล่าสุดที่ยิงพลุ
@@ -331,29 +335,41 @@ document.addEventListener('DOMContentLoaded', (event) => {
   
   function listenForKrathongs() {
     // --- ‼️‼️ ตรรกะใหม่: เปลี่ยนจากการดักฟังกระทงล่าสุด มาเป็นการสุ่มกระทงจาก Community ‼️‼️ ---
-    // 1. ดึงข้อมูลกระทงทั้งหมดมาเก็บ ID ไว้ใน Array ก่อน (ทำครั้งเดียวตอนโหลด)
-    let allKrathongIds = [];
+    // 1. ดึงข้อมูลกระทงทั้งหมดมาเก็บ ID ไว้ใน Array และเติมคลังสำหรับสุ่ม
     getDocs(krathongCollectionRef).then(snapshot => {
       snapshot.forEach(doc => allKrathongIds.push(doc.id));
+      // เติมคลังกระทงสำหรับสุ่มในครั้งแรก
+      refillCommunityPool();
       
       // 2. เริ่มแสดงกระทง Community ทันทีหลังจากได้ ID ทั้งหมด
       showCommunityKrathongs();
 
-      // 3. ตั้ง Interval ให้สุ่มและแสดงกระทงใหม่ๆ ทุกๆ 10-15 วินาที
-      setInterval(showCommunityKrathongs, Math.random() * 5000 + 10000);
+      // 3. ตั้ง Interval ให้สุ่มและแสดงกระทงใหม่ๆ ทุกๆ 15-25 วินาที (เพิ่มระยะห่าง)
+      setInterval(showCommunityKrathongs, Math.random() * 10000 + 15000);
     });
 
+    // ฟังก์ชันสำหรับเติมคลังกระทงที่จะสุ่ม
+    function refillCommunityPool() {
+      console.log("Refilling community krathong pool...");
+      communityKrathongPool = [...allKrathongIds];
+    }
+
     async function showCommunityKrathongs() {
-      if (allKrathongIds.length === 0) return; // ถ้ายังไม่มีกระทงเลย ก็ไม่ต้องทำอะไร
+      // 4. ถ้าคลังว่าง ให้เติมใหม่ก่อน
+      if (communityKrathongPool.length === 0) {
+        if (allKrathongIds.length === 0) return; // ยังไม่มีกระทงในระบบเลย
+        refillCommunityPool();
+      }
 
-      // 4. สุ่ม ID กระทงจาก Array ที่เก็บไว้
-      const randomId = allKrathongIds[Math.floor(Math.random() * allKrathongIds.length)];
+      // 5. สุ่ม index จากคลัง และดึง ID ออกมา (พร้อมลบออกจากคลัง)
+      const poolIndex = Math.floor(Math.random() * communityKrathongPool.length);
+      const randomId = communityKrathongPool.splice(poolIndex, 1)[0];
+
       const myKrathongId = localStorage.getItem('myKrathongId');
-
-      // 5. ไม่ต้องแสดงกระทงของตัวเองซ้ำ ถ้ามันกำลังจะถูกแสดงในฐานะ Community
+      // 6. ไม่ต้องแสดงกระทงของตัวเองซ้ำ ถ้ามันกำลังจะถูกแสดงในฐานะ Community
       if (randomId === myKrathongId) return;
 
-      // 6. ดึงข้อมูลของกระทงที่สุ่มได้ แล้วนำไปสร้าง Element
+      // 7. ดึงข้อมูลของกระทงที่สุ่มได้ แล้วนำไปสร้าง Element
       const docRef = doc(db, "krathongs", randomId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
@@ -473,15 +489,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // ปรับความเร็ว: กระทงที่อยู่ใกล้ (ใหญ่) ควรจะเร็วขึ้น (ใช้เวลาน้อยลง)
       const animationDuration = 60 + ( (1 - perspectiveRatio) * 60 ); // ระยะเวลา 60-108 วินาที
       
-      // สุ่ม delay ให้มากขึ้น เพื่อให้กระทงที่มาใหม่ไม่ปรากฏพร้อมกันทันที
-      const delay = Math.random() * -animationDuration + (Math.random() * 10);
+      // --- ‼️‼️ แก้ไข: ปรับ animation-delay ให้เป็นค่าบวกเสมอ ‼️‼️ ---
+      // เพื่อให้กระทงเริ่มต้นจากนอกจอเสมอ ไม่โผล่กลางคัน
+      const delay = Math.random() * 5; // สุ่มหน่วงเวลา 0-5 วินาที
       
       krathongWrapper.style.animationDuration = `${animationDuration}s`;
       krathongWrapper.style.bottom = `${verticalPos}%`;
       krathongWrapper.style.animationDelay = `${delay}s`;
-      // --- ‼️ ส่วนเพิ่มเติม: กำหนดขนาดและความโปร่งใสตามมิติความลึก ‼️ ---
-      // เราใช้ transform: scale() ที่นี่ ดังนั้น keyframes animation ไม่ควรมี scale() อีก
-      // เพื่อป้องกันการเขียนทับกัน (ผมจะไปลบออกจาก keyframes ในขั้นตอนถัดไป)
+      // --- ‼️‼️ แก้ไข: กำหนด z-index และ transform ตามมิติความลึก ‼️‼️ ---
+      // กระทงที่อยู่ใกล้ (laneIndex สูง) จะมี z-index สูงกว่า (อยู่ข้างบน)
+      krathongWrapper.style.zIndex = 10 + laneIndex;
       krathongWrapper.style.transform = `scale(${scale})`;
       krathongWrapper.style.opacity = opacity;
 
