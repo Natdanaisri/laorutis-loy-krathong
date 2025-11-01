@@ -424,13 +424,27 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // เพิ่มการสุ่มเล็กน้อยในแต่ละเลน เพื่อไม่ให้กระทงเรียงเป็นเส้นตรงเป๊ะ
       const randomOffset = (Math.random() - 0.5) * laneHeight * 0.5; 
       const verticalPos = verticalMin + (laneIndex * laneHeight) + (laneHeight / 2) + randomOffset;
-
-      // สุ่ม delay ให้มากขึ้น เพื่อให้กระทงที่มาใหม่ไม่ปรากฏพร้อมกันทันที
-      const delay = Math.random() * -duration + (Math.random() * 10); // เพิ่ม delay แบบสุ่มเล็กน้อย
       
-      krathongWrapper.style.animationDuration = `${duration}s`;
+      // --- ‼️ ส่วนเพิ่มเติม: จำลองมิติความลึก (Perspective) ‼️ ---
+      // กระทงที่อยู่ไกล (ด้านบน, laneIndex น้อย) จะเล็กและช้า
+      // กระทงที่อยู่ใกล้ (ด้านล่าง, laneIndex มาก) จะใหญ่และเร็ว
+      const perspectiveRatio = (laneIndex + 1) / NUMBER_OF_LANES; // ค่าระหว่าง 0.2 ถึง 1.0
+      const scale = 0.6 + (perspectiveRatio * 0.5); // ขนาดจะอยู่ระหว่าง 0.7 - 1.1
+      const opacity = 0.7 + (perspectiveRatio * 0.3); // ความโปร่งใส 0.76 - 1.0
+      // ปรับความเร็ว: กระทงที่อยู่ใกล้ (ใหญ่) ควรจะเร็วขึ้น (ใช้เวลาน้อยลง)
+      const animationDuration = 60 + ( (1 - perspectiveRatio) * 60 ); // ระยะเวลา 60-108 วินาที
+      
+      // สุ่ม delay ให้มากขึ้น เพื่อให้กระทงที่มาใหม่ไม่ปรากฏพร้อมกันทันที
+      const delay = Math.random() * -animationDuration + (Math.random() * 10);
+      
+      krathongWrapper.style.animationDuration = `${animationDuration}s`;
       krathongWrapper.style.bottom = `${verticalPos}%`;
       krathongWrapper.style.animationDelay = `${delay}s`;
+      // --- ‼️ ส่วนเพิ่มเติม: กำหนดขนาดและความโปร่งใสตามมิติความลึก ‼️ ---
+      // เราใช้ transform: scale() ที่นี่ ดังนั้น keyframes animation ไม่ควรมี scale() อีก
+      // เพื่อป้องกันการเขียนทับกัน (ผมจะไปลบออกจาก keyframes ในขั้นตอนถัดไป)
+      krathongWrapper.style.transform = `scale(${scale})`;
+      krathongWrapper.style.opacity = opacity;
 
       // --- ‼️ แก้ไข: กำหนดให้กระทงลอยจากซ้ายไปขวาเสมอ ‼️ ---
       const orientation = window.matchMedia("(orientation: portrait)").matches ? 'portrait' : 'desktop';

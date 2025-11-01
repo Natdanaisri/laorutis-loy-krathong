@@ -58,10 +58,8 @@ body, html {
   #create-krathong-btn {
     /* ‼️ แก้ไข: ปรับปรุงปุ่มสำหรับมือถือ ‼️ */
     font-size: 0.95em; /* ลดขนาดฟอนต์ลงเล็กน้อย */
-    padding: 12px 20px; /* ปรับ padding */
-    width: 85%; /* ปรับความกว้าง */
-    max-width: 350px;
     bottom: 20px; /* ลดระยะห่างจากขอบล่าง */
+    /* ลบ width และ max-width ออก เพื่อให้ปุ่มปรับขนาดตามเนื้อหา */
   }
 
   #krathong-counter {
@@ -219,50 +217,50 @@ body, html {
 
 @keyframes floatAcross-desktop {
   0% {
-    transform: translateX(calc(-1 * var(--krathong-size-desktop))) rotate(-5deg) scale(0.9);
+    transform: translateX(calc(-1 * var(--krathong-size-desktop))) rotate(-5deg);
   }
   50% {
-     transform: translateX(calc(50vw - var(--krathong-size-desktop) / 2)) rotate(5deg) scale(1);
+     transform: translateX(calc(50vw - var(--krathong-size-desktop) / 2)) rotate(5deg);
   }
   100% {
-    transform: translateX(calc(100vw + var(--krathong-size-desktop))) rotate(-5deg) scale(0.9);
+    transform: translateX(calc(100vw + var(--krathong-size-desktop))) rotate(-5deg);
   }
 }
 
 @keyframes floatAcrossReverse-desktop {
   0% {
-    transform: translateX(calc(100vw + var(--krathong-size-desktop))) rotate(5deg) scale(0.9);
+    transform: translateX(calc(100vw + var(--krathong-size-desktop))) rotate(5deg);
   }
   50% {
-     transform: translateX(calc(50vw - var(--krathong-size-desktop) / 2)) rotate(-5deg) scale(1);
+     transform: translateX(calc(50vw - var(--krathong-size-desktop) / 2)) rotate(-5deg);
   }
   100% {
-    transform: translateX(calc(-1 * var(--krathong-size-desktop))) rotate(5deg) scale(0.9);
+    transform: translateX(calc(-1 * var(--krathong-size-desktop))) rotate(5deg);
   }
 }
 
 /* --- ‼️ ส่วนเพิ่มเติม: Keyframes สำหรับกระทงบนจอแนวตั้ง ‼️ --- */
 @keyframes floatAcross-portrait {
   0% {
-    transform: translateX(calc(-1 * var(--krathong-size-mobile))) rotate(-5deg) scale(0.9);
+    transform: translateX(calc(-1 * var(--krathong-size-mobile))) rotate(-5deg);
   }
   50% {
-     transform: translateX(calc(50vw - var(--krathong-size-mobile) / 2)) rotate(5deg) scale(1);
+     transform: translateX(calc(50vw - var(--krathong-size-mobile) / 2)) rotate(5deg);
   }
   100% {
-    transform: translateX(calc(100vw + var(--krathong-size-mobile))) rotate(-5deg) scale(0.9);
+    transform: translateX(calc(100vw + var(--krathong-size-mobile))) rotate(-5deg);
   }
 }
 
 @keyframes floatAcrossReverse-portrait {
   0% {
-    transform: translateX(calc(100vw + var(--krathong-size-mobile))) rotate(5deg) scale(0.9);
+    transform: translateX(calc(100vw + var(--krathong-size-mobile))) rotate(5deg);
   }
   50% {
-     transform: translateX(calc(50vw - var(--krathong-size-mobile) / 2)) rotate(-5deg) scale(1);
+     transform: translateX(calc(50vw - var(--krathong-size-mobile) / 2)) rotate(-5deg);
   }
   100% {
-    transform: translateX(calc(-1 * var(--krathong-size-mobile))) rotate(5deg) scale(0.9);
+    transform: translateX(calc(-1 * var(--krathong-size-mobile))) rotate(5deg);
   }
 }
 
@@ -312,6 +310,7 @@ body, html {
   transition: all 0.3s ease;
   z-index: 1000;
   animation: pulse-glow 3s infinite ease-in-out; /* ‼️ เพิ่ม Animation ‼️ */
+  white-space: nowrap; /* ‼️ เพิ่ม: ป้องกันข้อความขึ้นบรรทัดใหม่ ‼️ */
 }
 
 #create-krathong-btn:hover {
