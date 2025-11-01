@@ -56,19 +56,22 @@ body, html {
 
   /* --- ปรับสัดส่วนปุ่มและตัวนับสำหรับจอแนวตั้ง --- */
   #create-krathong-btn {
-    font-size: 1em; /* ลดขนาดฟอนต์ */
-    padding: 10px 20px; /* ลด padding ของปุ่ม */
-    width: 90%; /* ทำให้ปุ่มกว้างขึ้นเล็กน้อย */
-    max-width: 400px; /* แต่ไม่กว้างเกินไป */
+    /* ‼️ แก้ไข: ปรับปรุงปุ่มสำหรับมือถือ ‼️ */
+    font-size: 0.95em; /* ลดขนาดฟอนต์ลงเล็กน้อย */
+    padding: 12px 20px; /* ปรับ padding */
+    width: 85%; /* ปรับความกว้าง */
+    max-width: 350px;
+    bottom: 20px; /* ลดระยะห่างจากขอบล่าง */
   }
 
   #krathong-counter {
-    width: 90%;
-    max-width: 380px; /* ลดความกว้างสูงสุดเล็กน้อย */
-    justify-content: center;
+    /* ‼️ แก้ไข: ปรับปรุงตัวนับสำหรับมือถือ ‼️ */
+    width: 85%;
+    max-width: 350px;
     font-size: 0.9em;
-    bottom: 85px; /* ปรับตำแหน่งสำหรับมือถือให้สูงขึ้นเล็กน้อย */
-    padding: 8px 10px;
+    bottom: 80px; /* ย้ายตำแหน่งให้อยู่เหนือปุ่มสร้างกระทง */
+    padding: 6px 10px; /* ลด padding แนวตั้ง */
+    justify-content: space-between; /* จัดให้ปุ่ม "ดูทั้งหมด" อยู่ขวาสุดเสมอ */
   }
 
   /* --- ‼️ เพิ่มเติม: ปรับขนาดตัวอักษรบนกระทงสำหรับจอแนวตั้ง ‼️ --- */
@@ -143,8 +146,8 @@ body, html {
   bottom: -50px;
   width: var(--krathong-size-desktop); /* ใช้ตัวแปรสำหรับขนาดแนวนอน */
   height: auto;
-  /* --- ‼️ แก้ไข: กำหนด animation เริ่มต้นให้ไหลจากขวาไปซ้าย ‼️ --- */
-  animation: floatAcrossReverse-desktop 80s linear infinite;
+  /* --- ‼️ แก้ไข: animation จะถูกกำหนดโดย JavaScript เพื่อสุ่มทิศทาง ‼️ --- */
+  animation: none 80s linear infinite;
   transform-origin: center bottom;
   opacity: 0.9;
   display: flex; /* Use flexbox for centering content */
