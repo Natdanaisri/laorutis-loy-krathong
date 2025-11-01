@@ -186,29 +186,30 @@ body, html {
 
 .krathong-name, .krathong-wish {
   position: absolute;
-  color: white; /* หรือสีที่ตัดกับรูปกระทง */
-  font-size: 0.7em; /* ‼️ แก้ไข: กำหนดขนาดฟอนต์พื้นฐาน */
+  color: #fff;
+  font-size: 0.8em; /* ปรับขนาดฟอนต์พื้นฐาน */
   font-weight: 500;
-  text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
-  width: 90%; /* ‼️ ย้อนกลับ: กลับไปใช้ความกว้างเดิม */
-  word-wrap: break-word; /* Break long words */
-  pointer-events: none; /* Ensure clicks pass through to the krathong if needed */
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  width: 150%; /* ขยายความกว้างเผื่อข้อความยาว */
+  word-wrap: break-word;
+  pointer-events: none;
+  transform: translateX(-50%);
+  left: 50%;
+  line-height: 1.4;
 }
 
 .krathong-name {
-  top: 73%; /* ‼️ แก้ไข: ปรับให้ใกล้เข้ามาอีก 30% */
-  transform: translateX(-50%);
-  left: 50%;
-  font-size: 0.8em; /* ขยายขนาดตัวอักษรชื่อเล็กน้อย */
+  /* ‼️ ข้อเสนอแนะ: ย้ายตำแหน่งไปอยู่เหนือกระทง */
+  bottom: 105%; /* ย้ายไปอยู่เหนือรูปกระทง (100%) และเว้นระยะเล็กน้อย (5%) */
+  font-size: 0.9em;
+  font-weight: 700;
+  color: #ffeb3b; /* ทำให้ชื่อเด่นขึ้นด้วยสีทอง */
 }
 
 .krathong-wish {
-  top: -5%; /* ‼️ แก้ไข: ปรับระยะห่างให้ใกล้ขึ้น */
-  transform: translateX(-50%);
-  left: 50%;
-  font-size: 0.7em;
+  /* ‼️ ข้อเสนอแนะ: ย้ายตำแหน่งไปอยู่ใต้ชื่อ */
+  bottom: 80%; /* จัดตำแหน่งให้อยู่ใต้ชื่อ */
   font-style: italic;
-  opacity: 0.8;
 }
 
 
