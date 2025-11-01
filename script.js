@@ -10,7 +10,10 @@ import {
     orderBy, 
     limit,
     serverTimestamp,
-    connectFirestoreEmulator
+    connectFirestoreEmulator,
+    doc,
+    getDoc,
+    getCountFromServer // ‼️ เพิ่ม: สำหรับนับจำนวนเอกสาร
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 // 2. ใช้ firebaseConfig ของครูไบร์ทที่ให้มา
@@ -71,6 +74,10 @@ const PARTICLE_SPEED_MIN = 0.5; // ความเร็วขั้นต่ำ
 const PARTICLE_SPEED_MAX = 4; // ความเร็วสูงสุดของอนุภาค
 const FIREWORK_HUE_MIN = 0; // สีพลุ (Hue) ขั้นต่ำ
 const FIREWORK_HUE_MAX = 360; // สีพลุ (Hue) สูงสุด
+
+// --- ‼️ ส่วนเพิ่มเติม: การจัดการการแสดงผลกระทง ‼️ ---
+const MAX_KRATHONGS_ON_SCREEN = 30; // กำหนดจำนวนกระทงสูงสุดที่จะแสดงบนหน้าจอ
+let displayedKrathongs = []; // Array สำหรับเก็บคิวของกระทงที่แสดงอยู่
 
 let fireworks = []; // อาร์เรย์เก็บพลุที่กำลังทำงาน
 let particles = []; // อาร์เรย์เก็บอนุภาคที่กำลังทำงาน
@@ -208,24 +215,71 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const createModal = document.getElementById('create-modal');
   const previewModal = document.getElementById('preview-modal');
   const closeBtns = document.querySelectorAll('.close-btn');
-  const selectionGrid = document.getElementById('krathong-selection-grid');
   const submitBtn = document.getElementById('submit-krathong-btn');
   const floatBtn = document.getElementById('float-krathong-btn');
   const counterNumberElem = document.getElementById('counter-number');
-  
-  // --- Populate Krathong Selection ---
+  // --- เพิ่มเติม: Element สำหรับควบคุมเพลง ---
+  // --- ‼️ ส่วนเพิ่มเติม: ปุ่มตามหากระทง ‼️ ---
+  const findMyKrathongBtn = document.getElementById('find-my-krathong-btn');
+  let myKrathongElement = null; // สำหรับเก็บกระทงพิเศษของเรา
+
+  const musicControlBtn = document.getElementById('music-control-btn');
+  const backgroundMusic = document.getElementById('background-music');
+  let isMusicPlaying = false; // สถานะของเพลง
+
+  // --- ‼️ ส่วนที่แก้ไข: UI สำหรับเลือกกระทงแบบใหม่ ‼️ ---
+  const prevBtn = document.getElementById('prev-krathong-btn');
+  const nextBtn = document.getElementById('next-krathong-btn');
+  const krathongPreviewImg = document.getElementById('selected-krathong-preview');
+  const dotsContainer = document.getElementById('krathong-dots-container');
+  let currentKrathongIndex = 0;
+
+  // --- แก้ไข: สร้างภาพตัวอย่าง (thumbnails) สำหรับนำทาง ---
   KRATHONG_IMAGES.forEach((src, index) => {
-    let img = document.createElement('img');
-    img.src = src;
-    img.classList.add('krathong-option');
-    img.dataset.type = 'krathong_' + (index + 1);
-    img.dataset.src = src;
-    selectionGrid.appendChild(img);
+    const thumb = document.createElement('img'); // เปลี่ยนจาก div เป็น img
+    thumb.src = src; // กำหนด src ของรูปภาพ
+    thumb.classList.add('krathong-thumbnail'); // ใช้ class ใหม่
+    thumb.dataset.index = index;
+    thumb.addEventListener('click', () => showKrathong(index));
+    dotsContainer.appendChild(thumb);
   });
-  const krathongOptions = document.querySelectorAll('.krathong-option');
+
+  const thumbnails = document.querySelectorAll('.krathong-thumbnail'); // เลือก element ด้วย class ใหม่
+
+  // ฟังก์ชันสำหรับแสดงกระทงตาม index
+  function showKrathong(index) {
+    // ทำให้ index วนลูปเมื่อถึงภาพสุดท้ายหรือภาพแรก
+    if (index >= KRATHONG_IMAGES.length) {
+      index = 0;
+    } else if (index < 0) {
+      index = KRATHONG_IMAGES.length - 1;
+    }
+
+    currentKrathongIndex = index;
+    const krathongSrc = KRATHONG_IMAGES[currentKrathongIndex];
+    krathongPreviewImg.src = krathongSrc;
+
+    // อัปเดตสถานะ active ของภาพตัวอย่าง (thumbnails)
+    thumbnails.forEach(thumb => thumb.classList.remove('active'));
+    thumbnails[currentKrathongIndex].classList.add('active');
+
+    // อัปเดตข้อมูลกระทงที่เลือก
+    selectedKrathongType = {
+      type: `krathong_${currentKrathongIndex + 1}`,
+      src: krathongSrc
+    };
+  }
 
   // --- Initial Load & Real-time Listener ---
   listenForKrathongs();
+  showKrathong(0); // แสดงกระทงแรกเมื่อโหลด
+
+  // --- ‼️ ส่วนเพิ่มเติม: ดึงจำนวนกระทงทั้งหมดเมื่อโหลดหน้า ‼️ ---
+  updateTotalKrathongCount();
+  
+  // --- ‼️ ส่วนเพิ่มเติม: ตรวจสอบและแสดงปุ่ม "ตามหากระทง" เมื่อโหลดหน้า ‼️ ---
+  checkAndShowFindMyKrathongButton();
+
 
   // --- Event Listeners ---
   createBtn.addEventListener('click', () => createModal.style.display = 'block');
@@ -236,13 +290,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
     });
   });
 
-  krathongOptions.forEach(option => {
-    option.addEventListener('click', (e) => {
-      krathongOptions.forEach(opt => opt.classList.remove('selected'));
-      e.target.classList.add('selected');
-      selectedKrathongType = { type: e.target.dataset.type, src: e.target.dataset.src };
-    });
-  });
+  // Event Listeners สำหรับปุ่มลูกศร
+  prevBtn.addEventListener('click', () => showKrathong(currentKrathongIndex - 1));
+  nextBtn.addEventListener('click', () => showKrathong(currentKrathongIndex + 1));
 
   submitBtn.addEventListener('click', () => {
     const data = handleFormSubmit();
@@ -252,20 +302,29 @@ document.addEventListener('DOMContentLoaded', (event) => {
   });
   floatBtn.addEventListener('click', () => saveAndFloatKrathong(currentKrathongData));
   
+  // --- เพิ่มเติม: Event Listener สำหรับปุ่มควบคุมเพลง ---
+  musicControlBtn.addEventListener('click', toggleMusic);
+
+  // --- ‼️ ส่วนเพิ่มเติม: Event Listener สำหรับปุ่มตามหากระทง ‼️ ---
+  findMyKrathongBtn.addEventListener('click', findAndHighlightMyKrathong);
+
   // --- Functions ---
   
   function listenForKrathongs() {
-    // สร้าง query เพื่อดึงข้อมูล 100 รายการล่าสุด
-    const q = query(krathongCollectionRef, orderBy("timestamp", "desc"));
+    // --- ‼️ แก้ไข Query: ดึงข้อมูลล่าสุดตามจำนวนที่กำหนด (MAX_KRATHONGS_ON_SCREEN) ---
+    const q = query(
+      krathongCollectionRef, 
+      orderBy("timestamp", "desc"), 
+      limit(MAX_KRATHONGS_ON_SCREEN)
+    );
 
     // onSnapshot คือการ "ดักฟัง" ข้อมูลแบบ Real-time
     onSnapshot(q, (snapshot) => {
-      // อัปเดตจำนวนกระทงทั้งหมด
-      counterNumberElem.textContent = snapshot.size;
-
+      // เราจะไม่นับจำนวนจากตรงนี้แล้ว เพราะข้อมูลถูกจำกัดมา
       snapshot.docChanges().forEach((change) => {
         // เมื่อมีกระทง "ถูกเพิ่ม" (added)
         if (change.type === "added") {
+          // สร้างกระทงใหม่ และจัดการคิวการแสดงผล
           createKrathongElement(change.doc.data());
         }
       });
@@ -277,6 +336,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
   
   function createKrathongElement(kData) {
       const river = document.getElementById('river');
+
+      // --- ‼️ ส่วนเพิ่มเติม: จัดการคิวการแสดงผล ‼️ ---
+      // 1. ตรวจสอบว่ามีกระทงแสดงผลเกินจำนวนที่กำหนดหรือไม่
+      if (displayedKrathongs.length >= MAX_KRATHONGS_ON_SCREEN) {
+        // 2. ถ้าเกิน, ให้ลบกระทงที่เก่าที่สุด (ตัวแรกใน Array) ออกจาก DOM
+        const oldestKrathong = displayedKrathongs.shift(); // ดึงตัวเก่าสุดออกจาก Array
+        oldestKrathong.remove(); // ลบ Element ออกจากหน้าจอ
+      }
+      // --- สิ้นสุดการจัดการคิว ---
 
       // Create a wrapper div for the krathong image and text
       const krathongWrapper = document.createElement('div');
@@ -324,6 +392,29 @@ document.addEventListener('DOMContentLoaded', (event) => {
       krathongWrapper.style.animationDelay = `${Math.random() * duration * -1}s`; 
       
       river.appendChild(krathongWrapper);
+
+      // --- ‼️ ส่วนเพิ่มเติม: เพิ่มกระทงใหม่เข้าคิว ‼️ ---
+      displayedKrathongs.push(krathongWrapper); // 3. เพิ่มกระทงใหม่ที่เพิ่งสร้างเข้าไปในคิว
+  }
+
+  // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับสร้างกระทง "พิเศษ" ของเรา ‼️ ---
+  function createMyKrathongElement(kData) {
+    // ถ้ามีกระทงพิเศษของเราแสดงอยู่แล้ว ให้ลบของเก่าออกก่อน
+    if (myKrathongElement && myKrathongElement.parentNode) {
+      myKrathongElement.remove();
+    }
+
+    // สร้างกระทงโดยใช้ฟังก์ชันเดิม
+    createKrathongElement(kData);
+
+    // หากระทงที่เพิ่งสร้าง (ตัวสุดท้ายในคิว)
+    const newKrathong = displayedKrathongs[displayedKrathongs.length - 1];
+    if (newKrathong) {
+      // เพิ่มคลาสพิเศษเพื่อไฮไลท์
+      newKrathong.classList.add('my-krathong-highlight');
+      // เก็บ reference ของกระทงเราไว้
+      myKrathongElement = newKrathong;
+    }
   }
 
   function handleFormSubmit() {
@@ -366,13 +457,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
     
     try {
       // บันทึกข้อมูลลง Firestore ด้วยฟังก์ชัน addDoc
-      await addDoc(krathongCollectionRef, dataToSave);
+      const docRef = await addDoc(krathongCollectionRef, dataToSave);
       
+      // --- ‼️ ส่วนเพิ่มเติม: บันทึก ID กระทงและแสดงปุ่ม ‼️ ---
+      // 1. บันทึก ID ของกระทงที่เพิ่งสร้างลงใน localStorage
+      localStorage.setItem('myKrathongId', docRef.id);
+      // 2. แสดงปุ่ม "ตามหากระทงของฉัน"
+      findMyKrathongBtn.style.display = 'block';
+
+      // --- ‼️ ส่วนเพิ่มเติม: อัปเดตจำนวนกระทงบนหน้าจอทันที ‼️ ---
+      updateTotalKrathongCount();
+
       // Reset form
       document.getElementById('user-name').value = '';
       document.getElementById('user-wish').value = '';
-      krathongOptions.forEach(opt => opt.classList.remove('selected'));
-      selectedKrathongType = null;
+      // ไม่ต้อง reset selectedKrathongType ที่นี่ เพราะจะถูกตั้งค่าใหม่เมื่อผู้ใช้เลือก
+      // showKrathong(0); // กลับไปที่กระทงแรก
 
     } catch (error) {
       console.error("Error adding document: ", error);
@@ -383,6 +483,57 @@ document.addEventListener('DOMContentLoaded', (event) => {
     floatBtn.textContent = 'ปล่อยกระทงลงน้ำ';
   }
   
+  // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับดึงและอัปเดตจำนวนกระทงทั้งหมด ‼️ ---
+  async function updateTotalKrathongCount() {
+    try {
+      // ใช้ getCountFromServer เพื่อนับจำนวนเอกสารทั้งหมดใน collection
+      const snapshot = await getCountFromServer(krathongCollectionRef);
+      const totalCount = snapshot.data().count;
+
+      // อัปเดตตัวเลขบนหน้าจอ
+      counterNumberElem.textContent = totalCount;
+    } catch (error) {
+      console.error("Error getting krathong count:", error);
+    }
+  }
+
+  // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับตรวจสอบและแสดงปุ่ม "ตามหากระทง" ‼️ ---
+  function checkAndShowFindMyKrathongButton() {
+    const myId = localStorage.getItem('myKrathongId');
+    if (myId) {
+      findMyKrathongBtn.style.display = 'block';
+    }
+  }
+
+  // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับค้นหาและไฮไลท์กระทงของฉัน ‼️ ---
+  async function findAndHighlightMyKrathong() {
+    const myId = localStorage.getItem('myKrathongId');
+    if (!myId) {
+      alert('ยังไม่พบข้อมูลกระทงของคุณในเครื่องนี้');
+      return;
+    }
+
+    // แสดง Toast บอกผู้ใช้ว่ากำลังค้นหา
+    showToast('กำลังตามหากระทงของคุณ...');
+
+    try {
+      const docRef = doc(db, "krathongs", myId);
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        // ถ้าเจอกระทง, สร้างกระทงพิเศษขึ้นมาแสดงผล
+        createMyKrathongElement(docSnap.data());
+      } else {
+        alert('ไม่พบกระทงของคุณในระบบแล้ว อาจถูกลบไปตามนโยบาย');
+        localStorage.removeItem('myKrathongId'); // ลบ ID ที่ใช้ไม่ได้แล้ว
+        findMyKrathongBtn.style.display = 'none'; // ซ่อนปุ่ม
+      }
+    } catch (error) {
+      console.error("Error finding krathong:", error);
+      alert('เกิดข้อผิดพลาดขณะค้นหากระทง');
+    }
+  }
+
   function showToast() {
     const toast = document.getElementById('toast-notification');
     toast.className = 'show';
@@ -443,4 +594,39 @@ document.addEventListener('DOMContentLoaded', (event) => {
     window.addEventListener('resize', resizeFireworksCanvas); // จัดการเมื่อหน้าจอถูกปรับขนาด
     animateFireworks(); // เริ่มลูปแอนิเมชัน
   }
+
+  // --- เพิ่มเติม: ฟังก์ชันสำหรับควบคุมเพลง ---
+  function toggleMusic() {
+    if (isMusicPlaying) {
+        backgroundMusic.pause();
+        musicControlBtn.textContent = '🔇';
+    } else {
+        // การเรียก .play() จะคืนค่า Promise
+        // เราจะใช้ Promise นี้เพื่อตรวจสอบว่าเล่นได้สำเร็จหรือไม่
+        const playPromise = backgroundMusic.play();
+        if (playPromise !== undefined) {
+            playPromise.then(_ => {
+                // เล่นเพลงสำเร็จ
+                musicControlBtn.textContent = '🎵';
+                isMusicPlaying = true; // อัปเดตสถานะที่นี่
+            }).catch(error => {
+                // เล่นเพลงไม่สำเร็จ (เช่น เบราว์เซอร์บล็อก)
+                console.log("การเล่นเพลงอัตโนมัติถูกบล็อก:", error);
+                isMusicPlaying = false; // ตรวจสอบให้แน่ใจว่าสถานะถูกต้อง
+                musicControlBtn.textContent = '🔇'; // อัปเดตไอคอนปุ่มเมื่อเล่นไม่สำเร็จ
+            });
+        }
+    }
+  }
+
+  // --- เพิ่มเติม: จัดการการเล่นเพลง ---
+  // 1. พยายามเล่นเพลงอัตโนมัติเมื่อโหลดหน้าเว็บ
+  toggleMusic();
+
+  // 2. หากเล่นอัตโนมัติไม่สำเร็จ ให้เริ่มเล่นเมื่อผู้ใช้คลิกครั้งแรก
+  document.body.addEventListener('click', () => {
+    if (!isMusicPlaying && backgroundMusic.paused) {
+        toggleMusic();
+    }
+  }, { once: true }); // { once: true } ทำให้ Event Listener นี้ทำงานแค่ครั้งเดียว
 });

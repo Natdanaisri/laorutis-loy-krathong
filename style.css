@@ -18,23 +18,52 @@ body, html {
   width: 100%;
   height: 100%; /* <-- แก้ไข: ให้พื้นหลังเต็มความสูงของหน้าจอ */
   position: relative;
-  /* --- เพิ่มเติม: ดัน container ลงมาเล็กน้อยเพื่อให้เห็นท้องฟ้าด้านบน --- */
-  /* เราใช้ padding-top เพื่อให้เนื้อหาข้างใน (เช่น แม่น้ำ) ถูกดันลงมา */
-  /* แต่ยังคงให้ background-image เริ่มจากขอบบนสุดของ container */
-  padding-top: 10vh; /* ดันเนื้อหาลงมา 10% ของความสูงหน้าจอ */
-  box-sizing: border-box; /* ทำให้ padding ไม่ไปเพิ่มความสูงของ container */
+  /* ไม่จำเป็นต้องใช้ padding-top ที่นี่แล้ว */
 }
 
 /* ===== ส่วนที่เพิ่มเข้ามาสำหรับวิดีโอพื้นหลัง ===== */
-#background-video {
+.background-video {
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: fill; /* ทำให้วิดีโอเต็มพื้นที่โดยการยืด (อาจเสียสัดส่วน) */
+  object-fit: fill; /* เปลี่ยนกลับ: ทำให้วิดีโอเต็มพื้นที่โดยการยืด (อาจเสียสัดส่วน) */
+  /* object-position ไม่มีผลเมื่อใช้ fill */
   z-index: 0; /* จัดให้อยู่หลังสุด */
   pointer-events: none; /* ทำให้คลิกทะลุได้ */
+}
+
+/* เริ่มต้น: ซ่อนวิดีโอสำหรับมือถือไว้ก่อน */
+#background-video-mobile {
+  display: none;
+}
+
+/* Media Query สำหรับหน้าจอแนวตั้ง (เช่น โทรศัพท์, iPad แนวตั้ง) */
+@media (orientation: portrait) {
+  #background-video-desktop {
+    display: none; /* ซ่อนวิดีโอแนวนอน */
+  }
+  #background-video-mobile {
+    display: block; /* แสดงวิดีโอแนวตั้ง */
+  }
+
+  /* --- ปรับสัดส่วนปุ่มและตัวนับสำหรับจอแนวตั้ง --- */
+  #create-krathong-btn {
+    font-size: 1em;
+    padding: 12px 24px;
+    width: 90%; /* ทำให้ปุ่มกว้างขึ้นเล็กน้อย */
+    max-width: 400px; /* แต่ไม่กว้างเกินไป */
+  }
+
+  #krathong-counter {
+    width: 90%;
+    max-width: 400px;
+    justify-content: center;
+    font-size: 0.9em;
+    bottom: 90px; /* ปรับตำแหน่งสำหรับมือถือ */
+    padding: 8px 10px;
+  }
 }
 
 /* ===== ส่วนที่เพิ่มเข้ามาสำหรับดาวระยิบระยับ ===== */
@@ -111,6 +140,16 @@ body, html {
   text-align: center;
   padding-bottom: 10px; /* Adjust if krathong image has padding */
   z-index: 10; /* Ensure krathongs are above waves */
+}
+
+/* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับไฮไลท์กระทงของฉัน ‼️ --- */
+.my-krathong-highlight {
+  /* เพิ่มเงาฟุ้งๆ สีทองเพื่อทำให้โดดเด่น */
+  filter: drop-shadow(0 0 15px #ffeb3b) drop-shadow(0 0 5px #ffffff);
+  /* ทำให้สว่างขึ้นเล็กน้อย */
+  opacity: 1 !important; 
+  /* ทำให้ลอยอยู่ชั้นบนสุด */
+  z-index: 20 !important;
 }
 
 .floating-krathong-wrapper img { /* Style for the actual krathong image inside the wrapper */
@@ -274,22 +313,72 @@ body, html {
 }
 
 /* Form Elements */
-#krathong-selection-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 15px;
+/* --- รูปแบบใหม่สำหรับตัวเลือกกระทง --- */
+#krathong-selector {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   margin: 20px 0;
+  position: relative;
 }
 
-.krathong-option {
-  width: 100%;
+.krathong-image-wrapper {
+  width: 300px; /* <-- ขยายขนาดภาพกระทงหลัก */
+  height: 300px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#selected-krathong-preview {
+  max-width: 100%;
+  max-height: 100%;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.selector-arrow {
+  background-color: transparent;
+  border: none;
+  font-size: 2.5em;
+  color: #aaa;
   cursor: pointer;
-  border: 3px solid transparent;
-  border-radius: 10px;
-  transition: all 0.2s ease;
+  padding: 0 15px;
+  transition: color 0.2s ease;
 }
 
-.krathong-option.selected {
+.selector-arrow:hover {
+  color: var(--dark-text);
+}
+
+#krathong-dots-container {
+  display: flex;
+  justify-content: flex-start; /* <-- ปรับเป็น flex-start */
+  gap: 8px;
+  margin-bottom: 20px;
+  /* --- เพิ่มเติม: จัดการให้ขึ้นแถวใหม่ --- */
+  flex-wrap: wrap;
+  max-width: 282px; /* (ความกว้างรูป 50px * 5) + (gap 8px * 4) = 250 + 32 = 282px */
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* --- เปลี่ยนจาก .dot เป็น .krathong-thumbnail --- */
+.krathong-thumbnail {
+  box-sizing: border-box; /* <-- เพิ่ม: ให้ความกว้าง 50px รวม border ไปด้วย */
+  width: 50px;
+  height: 50px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 3px solid transparent;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: all 0.3s ease;
+}
+
+.krathong-thumbnail:hover,
+.krathong-thumbnail.active {
+  opacity: 1;
   border-color: var(--primary-color);
   transform: scale(1.1);
 }
@@ -383,18 +472,33 @@ textarea {
 @media (max-width: 600px) {
   .modal-content {
     width: 90%;
-    margin: 15% auto;
+    margin: 10% auto; /* ปรับ margin ให้สอดคล้องกัน */
     padding: 20px;
   }
-  #create-krathong-btn {
-    font-size: 1em;
-    padding: 12px 24px;
+  #music-control-btn {
+    top: 15px;
+    right: 15px;
   }
-  #krathong-counter {
-    width: 90%;
-    justify-content: center;
-    font-size: 0.9em;
-    bottom: 90px; /* ปรับตำแหน่งสำหรับมือถือ */
-    padding: 8px 10px;
-  }
+}
+
+/* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับปุ่มพิเศษ (ตามหากระทง) ‼️ --- */
+.extra-btn {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  background-color: rgba(255, 255, 255, 0.2);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 20px;
+  padding: 8px 15px;
+  font-family: var(--primary-font);
+  font-size: 0.9em;
+  cursor: pointer;
+  backdrop-filter: blur(5px);
+  z-index: 1001; /* อยู่เหนือปุ่มสร้างกระทง แต่ใต้ modal */
+  transition: all 0.3s ease;
+}
+.extra-btn:hover {
+  background-color: rgba(255, 255, 255, 0.4);
+  transform: scale(1.05);
 }
