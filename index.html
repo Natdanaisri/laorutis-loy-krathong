@@ -4,7 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ลอยกระทงออนไลน์ สาธิตละอออุทิศ ลำปาง</title>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chonburi&family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -40,9 +42,12 @@
 
   <!-- Krathong Counter -->
   <div id="krathong-counter">
-    <span id="counter-text">จำนวนผู้ร่วมลอยกระทง</span>
-    <span id="counter-number">0</span>
-    <span>คน</span>
+    <div class="counter-text-wrapper">
+      <span id="counter-text">จำนวนผู้ร่วมลอยกระทง</span>
+      <span id="counter-number">0</span>
+      <span>คน</span>
+    </div>
+    <button id="view-all-btn">ดูคำอวยพรทั้งหมด</button>
   </div>
 
   <!-- Modal 1: Create Krathong -->
@@ -77,8 +82,53 @@
          <p id="preview-wish-text"></p>
          <h3 id="preview-name-text"></h3>
       </div>
+      <!-- ===== ส่วนที่เพิ่มเข้ามา: คำอวยพรจากโรงเรียน ===== -->
+      <div class="school-blessing">
+        <p>"ในวันเพ็ญเดือนสิบสองนี้ โรงเรียนสาธิตละอออุทิศ<br>
+        ขอส่งความสุขและความปรารถนาดีไปยังนักเรียน ผู้ปกครอง และบุคลากรทุกท่าน<br>
+        ขอให้แสงเทียนจากกระทงใบนี้ นำทางสู่ความสำเร็จ สว่างไสว ดั่งจันทร์วันเพ็ญ"</p>
+        <p class="school-name">- จากใจ... โรงเรียนสาธิตละอออุทิศ ลำปาง -</p>
+      </div>
       <p class="capture-note">แคปหน้าจอนี้เก็บไว้เป็นที่ระลึกได้เลย!</p>
       <button id="float-krathong-btn">ปล่อยกระทงลงน้ำ</button>
+    </div>
+  </div>
+
+  <!-- ‼️ ส่วนเพิ่มเติม: Modal 3: All Wishes List ‼️ -->
+  <div id="list-modal" class="modal">
+    <div class="modal-content list-content">
+      <span class="close-btn" data-modal="list-modal">&times;</span>
+      <h2>รายชื่อและคำอธิษฐานทั้งหมด</h2>
+      <div id="wish-list-container">
+        <table id="wish-list-table">
+          <thead>
+            <tr>
+              <th>ลำดับ</th>
+              <th>กระทง</th>
+              <th>ชื่อ</th>
+              <th>คำอธิษฐาน</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- ข้อมูลจะถูกเติมที่นี่ด้วย JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ‼️ ส่วนเพิ่มเติม: Modal 4: Krathong Not Found ‼️ -->
+  <div id="not-found-modal" class="modal">
+    <div class="modal-content" style="max-width: 420px;">
+      <span class="close-btn" data-modal="not-found-modal">&times;</span>
+      <h2 style="color: #005a9e;">กระทงของคุณ</h2>
+      <div style="margin: 20px 0;">
+        <img src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExb214c3V2a29xZ2J2c2N2c2J5b2N0b3Z2b2Z2b2Z2b2Z2b2Z2ZyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3o7bu5sY0I2wDsmbMA/giphy.gif" alt="สายน้ำ" style="max-width: 150px; border-radius: 8px; margin-bottom: 15px;">
+        <p style="font-size: 1.1em; line-height: 1.6;">
+          กระทงของท่านได้ลอยไปสู่สายน้ำแห่งความสุขและความสำเร็จแล้ว<br>
+          ขอให้คำอธิษฐานของท่านเป็นจริงในเร็ววัน
+        </p>
+      </div>
     </div>
   </div>
 

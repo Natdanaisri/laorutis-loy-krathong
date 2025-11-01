@@ -1,8 +1,14 @@
 :root {
-  --primary-font: 'Kanit', sans-serif;
+  --heading-font: 'Chonburi', cursive;
+  --body-font: 'Sarabun', sans-serif;
   --modal-bg: rgba(255, 255, 255, 0.95);
   --dark-text: #333;
-  --primary-color: #ff9800;
+  --primary-color: #ffb300; /* ปรับสีให้สว่างขึ้นเล็กน้อย */
+
+  /* --- ‼️ ส่วนควบคุมขนาดกระทง (ปรับค่าที่นี่) ‼️ --- */
+  --krathong-size-desktop: 250px; /* ขนาดกระทงสำหรับจอแนวนอน (Desktop) */
+  --krathong-size-mobile: 150px;  /* ‼️ แก้ไข: ลดขนาดกระทงสำหรับจอแนวตั้ง */
+  /* -------------------------------------------------- */
 }
 
 body, html {
@@ -11,7 +17,7 @@ body, html {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  font-family: var(--primary-font);
+  font-family: var(--body-font);
 }
 
 #app-container {
@@ -50,20 +56,27 @@ body, html {
 
   /* --- ปรับสัดส่วนปุ่มและตัวนับสำหรับจอแนวตั้ง --- */
   #create-krathong-btn {
-    font-size: 1em;
-    padding: 12px 24px;
+    font-size: 1em; /* ลดขนาดฟอนต์ */
+    padding: 10px 20px; /* ลด padding ของปุ่ม */
     width: 90%; /* ทำให้ปุ่มกว้างขึ้นเล็กน้อย */
     max-width: 400px; /* แต่ไม่กว้างเกินไป */
   }
 
   #krathong-counter {
     width: 90%;
-    max-width: 400px;
+    max-width: 380px; /* ลดความกว้างสูงสุดเล็กน้อย */
     justify-content: center;
     font-size: 0.9em;
-    bottom: 90px; /* ปรับตำแหน่งสำหรับมือถือ */
+    bottom: 85px; /* ปรับตำแหน่งสำหรับมือถือให้สูงขึ้นเล็กน้อย */
     padding: 8px 10px;
   }
+
+  /* --- ‼️ เพิ่มเติม: ปรับขนาดตัวอักษรบนกระทงสำหรับจอแนวตั้ง ‼️ --- */
+  .krathong-name, .krathong-wish {
+    font-size: 0.6em; /* ลดขนาดฟอนต์พื้นฐานลง */
+  }
+  .krathong-name { font-size: 0.7em; } /* ปรับขนาดชื่อให้ใหญ่กว่าคำอวยพรเล็กน้อย */
+
 }
 
 /* ===== ส่วนที่เพิ่มเข้ามาสำหรับดาวระยิบระยับ ===== */
@@ -122,15 +135,16 @@ body, html {
   height: 50%; /* ปรับความสูงเป็นครึ่งหน้าจอ */
   pointer-events: none;
   z-index: 5; /* --- แก้ไข: กำหนด z-index ให้แม่น้ำอยู่เหนือดาว --- */
-}
+} 
 
+/* ===== ‼️ ส่วนควบคุมการแสดงผลกระทง (ขนาดและการเคลื่อนที่) ‼️ ===== */
 .floating-krathong-wrapper { /* New wrapper for krathong image and text */
   position: absolute;
   bottom: -50px;
-  width: 204px; /* <-- เพิ่มขนาดขึ้น 20% (จาก 170px) */
+  width: var(--krathong-size-desktop); /* ใช้ตัวแปรสำหรับขนาดแนวนอน */
   height: auto;
-  /* ใช้ animation floatAcross (กำหนดใน JS) สำหรับการลอยไปตามน้ำ */
-  animation: floatAcross 80s linear infinite;
+  /* --- ‼️ แก้ไข: กำหนด animation เริ่มต้นให้ไหลจากขวาไปซ้าย ‼️ --- */
+  animation: floatAcrossReverse-desktop 80s linear infinite;
   transform-origin: center bottom;
   opacity: 0.9;
   display: flex; /* Use flexbox for centering content */
@@ -141,6 +155,16 @@ body, html {
   padding-bottom: 10px; /* Adjust if krathong image has padding */
   z-index: 10; /* Ensure krathongs are above waves */
 }
+
+/* --- ปรับขนาดและ animation สำหรับจอแนวตั้ง --- */
+@media (orientation: portrait) {
+  .floating-krathong-wrapper {
+    width: var(--krathong-size-mobile); /* ใช้ตัวแปรสำหรับขนาดแนวตั้ง */
+    animation-name: floatAcrossReverse-portrait;
+  }
+}
+/* =================================================================== */
+
 
 /* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับไฮไลท์กระทงของฉัน ‼️ --- */
 .my-krathong-highlight {
@@ -153,7 +177,7 @@ body, html {
 }
 
 .floating-krathong-wrapper img { /* Style for the actual krathong image inside the wrapper */
-  width: 100%;
+  width: 100%; /* ‼️ แก้ไข: ปรับขนาดรูปให้พอดีกับกรอบ เพื่อให้ตำแหน่งข้อความถูกต้อง */
   height: auto;
   /* เพิ่ม animation bobbing ที่ตัวรูปกระทงโดยตรง */
   animation: bobbing 7s ease-in-out infinite;
@@ -163,52 +187,78 @@ body, html {
 .krathong-name, .krathong-wish {
   position: absolute;
   color: white; /* หรือสีที่ตัดกับรูปกระทง */
-  font-size: 0.7em;
+  font-size: 0.7em; /* ‼️ แก้ไข: กำหนดขนาดฟอนต์พื้นฐาน */
   font-weight: 500;
   text-shadow: 1px 1px 3px rgba(0,0,0,0.7);
-  width: 90%; /* Constrain text width */
+  width: 90%; /* ‼️ ย้อนกลับ: กลับไปใช้ความกว้างเดิม */
   word-wrap: break-word; /* Break long words */
   pointer-events: none; /* Ensure clicks pass through to the krathong if needed */
 }
 
 .krathong-name {
-  top: 60%; /* ปรับตำแหน่งตามความเหมาะสมกับรูปกระทง */
+  top: 73%; /* ‼️ แก้ไข: ปรับให้ใกล้เข้ามาอีก 30% */
   transform: translateX(-50%);
   left: 50%;
+  font-size: 0.8em; /* ขยายขนาดตัวอักษรชื่อเล็กน้อย */
 }
 
 .krathong-wish {
-  top: 75%; /* ปรับตำแหน่งตามความเหมาะสมกับรูปกระทง */
+  top: -5%; /* ‼️ แก้ไข: ปรับระยะห่างให้ใกล้ขึ้น */
   transform: translateX(-50%);
   left: 50%;
-  font-size: 0.6em;
+  font-size: 0.7em;
   font-style: italic;
   opacity: 0.8;
 }
 
 
 
-@keyframes floatAcross {
+@keyframes floatAcross-desktop {
   0% {
-    transform: translateX(-204px) rotate(-5deg) scale(0.9); /* Apply to wrapper */
+    transform: translateX(calc(-1 * var(--krathong-size-desktop))) rotate(-5deg) scale(0.9);
   }
   50% {
-     transform: translateX(calc(50vw - 102px)) rotate(5deg) scale(1);
+     transform: translateX(calc(50vw - var(--krathong-size-desktop) / 2)) rotate(5deg) scale(1);
   }
   100% {
-    transform: translateX(calc(100vw + 204px)) rotate(-5deg) scale(0.9);
+    transform: translateX(calc(100vw + var(--krathong-size-desktop))) rotate(-5deg) scale(0.9);
   }
 }
 
-@keyframes floatAcrossReverse {
+@keyframes floatAcrossReverse-desktop {
   0% {
-    transform: translateX(calc(100vw + 204px)) rotate(5deg) scale(0.9);
+    transform: translateX(calc(100vw + var(--krathong-size-desktop))) rotate(5deg) scale(0.9);
   }
   50% {
-     transform: translateX(calc(50vw - 102px)) rotate(-5deg) scale(1);
+     transform: translateX(calc(50vw - var(--krathong-size-desktop) / 2)) rotate(-5deg) scale(1);
   }
   100% {
-    transform: translateX(-204px) rotate(5deg) scale(0.9);
+    transform: translateX(calc(-1 * var(--krathong-size-desktop))) rotate(5deg) scale(0.9);
+  }
+}
+
+/* --- ‼️ ส่วนเพิ่มเติม: Keyframes สำหรับกระทงบนจอแนวตั้ง ‼️ --- */
+@keyframes floatAcross-portrait {
+  0% {
+    transform: translateX(calc(-1 * var(--krathong-size-mobile))) rotate(-5deg) scale(0.9);
+  }
+  50% {
+     transform: translateX(calc(50vw - var(--krathong-size-mobile) / 2)) rotate(5deg) scale(1);
+  }
+  100% {
+    transform: translateX(calc(100vw + var(--krathong-size-mobile))) rotate(-5deg) scale(0.9);
+  }
+}
+
+@keyframes floatAcrossReverse-portrait {
+  0% {
+    transform: translateX(calc(100vw + var(--krathong-size-mobile))) rotate(5deg) scale(0.9);
+  }
+  50% {
+     transform: translateX(calc(50vw - var(--krathong-size-mobile) / 2)) rotate(-5deg) scale(1);
+  }
+  100% {
+    transform: translateX(calc(-1 * var(--krathong-size-mobile))) rotate(5deg) scale(0.9);
   }
 }
 
@@ -225,24 +275,39 @@ body, html {
   }
 }
 
+/* --- ‼️ ส่วนเพิ่มเติม: Animation เรืองแสงสำหรับปุ่ม ‼️ --- */
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2), 0 0 5px rgba(255, 193, 7, 0.4);
+  }
+  50% {
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3), 0 0 18px rgba(255, 193, 7, 0.9);
+  }
+  100% {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2), 0 0 5px rgba(255, 193, 7, 0.4);
+  }
+}
 
 
 #create-krathong-btn {
   position: fixed;
   bottom: 30px;
   left: 50%;
+  font-family: var(--heading-font);
   transform: translateX(-50%);
-  padding: 15px 30px;
-  font-size: 1.2em;
-  font-family: var(--primary-font);
-  background-color: var(--primary-color);
+  padding: 12px 25px; /* ปรับ Padding ให้สมดุล */
+  font-size: 1em; /* ปรับขนาดฟอนต์ให้ใหญ่ขึ้นเล็กน้อย */
+  letter-spacing: 0.5px;
+  /* --- ‼️ แก้ไข: เปลี่ยนเป็น Gradient และเพิ่มเส้นขอบ ‼️ --- */
+  background: linear-gradient(180deg, #ffc107, #ff9800);
   color: white;
-  border: none;
+  border: 2px solid #FFA000;
   border-radius: 50px;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
   transition: all 0.3s ease;
   z-index: 1000;
+  animation: pulse-glow 3s infinite ease-in-out; /* ‼️ เพิ่ม Animation ‼️ */
 }
 
 #create-krathong-btn:hover {
@@ -253,22 +318,60 @@ body, html {
 /* Krathong Counter Styling */
 #krathong-counter {
   position: fixed;
-  bottom: 100px; /* วางไว้เหนือปุ่มสร้างกระทง (30px + 70px) */
+  bottom: 85px; /* ปรับตำแหน่งให้เหมาะสมกับปุ่มใหม่ */
   left: 50%;
   transform: translateX(-50%);
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: rgba(0, 0, 0, 0.25); /* ‼️ ทำให้โปร่งใสขึ้นและใช้สีเข้มเล็กน้อยเพื่อให้อ่านง่าย ‼️ */
   color: white;
-  padding: 8px 18px;
-  border-radius: 20px;
-  font-size: 1em;
+  padding: 8px 18px; /* ‼️ ลด Padding ลง ‼️ */
+  border-radius: 25px; /* ‼️ ทำให้ขอบมนมากขึ้น ‼️ */
+  border: 1px solid rgba(255, 255, 255, 0.15); /* ‼️ ทำให้เส้นขอบโปร่งใสขึ้น ‼️ */
   z-index: 999;
   text-align: center;
-  backdrop-filter: blur(3px);
+  backdrop-filter: blur(5px); /* ‼️ ลดความเบลอลงเล็กน้อย ‼️ */
+  display: flex;
+  flex-direction: row; /* ‼️ จัดเรียงเป็นแนวนอน ‼️ */
+  align-items: center;
+  justify-content: space-between; /* ‼️ จัดให้ข้อความและปุ่มอยู่คนละฝั่ง ‼️ */
   box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  transition: all 0.3s ease;
+  gap: 15px; /* ‼️ เพิ่มระยะห่างระหว่างข้อความและปุ่ม ‼️ */
+}
+
+.counter-text-wrapper {
   display: flex;
   align-items: center;
-  gap: 8px; /* ระยะห่างระหว่างข้อความและตัวเลข */
+  gap: 8px; /* ‼️ ระยะห่างระหว่างข้อความและตัวเลข ‼️ */
   white-space: nowrap; /* ป้องกันการตัดข้อความ */
+}
+
+#counter-text {
+  font-size: 0.85em; /* ‼️ ปรับขนาดฟอนต์ ‼️ */
+  opacity: 0.8;
+}
+
+#counter-number {
+  font-size: 1.1em; /* ‼️ ลดขนาดฟอนต์ตัวเลขลง ‼️ */
+  font-weight: 500;
+}
+
+/* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับปุ่ม "ดูทั้งหมด" ‼️ --- */
+#view-all-btn {
+  background-color: rgba(255, 255, 255, 0.15); /* ‼️ ปรับพื้นหลังปุ่ม ‼️ */
+  border: 1px solid rgba(255, 255, 255, 0.25); /* ‼️ ปรับเส้นขอบปุ่ม ‼️ */
+  color: white;
+  padding: 5px 12px; /* ‼️ ลด Padding ปุ่ม ‼️ */
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: var(--body-font);
+  font-size: 0.85em; /* ‼️ ปรับขนาดฟอนต์ ‼️ */
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+#view-all-btn:hover {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 /* Modal Styling */
@@ -298,8 +401,57 @@ body, html {
   text-align: center;
 }
 
+.modal-content h2 {
+  font-family: var(--heading-font);
+  font-size: 1.8em;
+}
+
 .preview-content {
   max-width: 400px;
+}
+
+/* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับ Modal รายชื่อ ‼️ --- */
+.list-content {
+  max-width: 800px; /* ขยายความกว้างสำหรับตาราง */
+  margin: 5% auto; /* ปรับ margin ด้านบน */
+}
+
+#wish-list-container {
+  max-height: 60vh; /* จำกัดความสูงและให้มี scrollbar */
+  overflow-y: auto;
+  margin-top: 20px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+#wish-list-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+}
+
+#wish-list-table th, #wish-list-table td {
+  padding: 12px 15px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+#wish-list-table th {
+  background-color: #f7f7f7;
+  font-weight: 500;
+  font-family: var(--body-font);
+  position: sticky; /* ทำให้หัวตารางลอยอยู่ด้านบนเมื่อ scroll */
+  top: 0;
+}
+
+#wish-list-table td:nth-child(1), #wish-list-table th:nth-child(1) { width: 50px; text-align: center; } /* คอลัมน์ลำดับ */
+#wish-list-table td:nth-child(2), #wish-list-table th:nth-child(2) { width: 80px; text-align: center; } /* คอลัมน์กระทง */
+#wish-list-table td:nth-child(3), #wish-list-table th:nth-child(3) { width: 25%; } /* คอลัมน์ชื่อ */
+
+#wish-list-table .list-krathong-img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
 }
 
 .close-btn {
@@ -389,7 +541,7 @@ input[type="text"], textarea {
   margin: 10px 0;
   border: 1px solid #ccc;
   border-radius: 8px;
-  font-family: var(--primary-font);
+  font-family: var(--body-font);
   font-size: 1em;
 }
 
@@ -408,7 +560,7 @@ textarea {
   width: 100%;
   border-radius: 8px;
   font-size: 1.1em;
-  font-family: var(--primary-font);
+  font-family: var(--heading-font);
 }
 
 /* Preview Area */
@@ -426,11 +578,34 @@ textarea {
 }
 #preview-name-text {
   font-weight: 500;
+  font-family: var(--heading-font);
 }
 .capture-note {
   font-size: 0.9em;
   color: #555;
   margin-top: 15px;
+}
+
+/* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับคำอวยพรจากโรงเรียน ‼️ --- */
+.school-blessing {
+  margin: 20px 0;
+  padding: 15px;
+  background-color: rgba(255, 215, 0, 0.1); /* สีทองอ่อนๆ โปร่งแสง */
+  border-left: 4px solid var(--primary-color);
+  border-radius: 0 8px 8px 0;
+  text-align: left;
+}
+.school-blessing p {
+  margin: 0;
+  font-size: 0.95em;
+  color: #444;
+  line-height: 1.6;
+}
+.school-blessing .school-name {
+  margin-top: 10px;
+  text-align: center;
+  font-weight: 500;
+  font-style: italic;
 }
 
 /* Toast Notification */
@@ -479,6 +654,11 @@ textarea {
     top: 15px;
     right: 15px;
   }
+  /* ‼️ เพิ่มเติม: ย้ายปุ่มตามหากระทงมาไว้ด้านขวาสำหรับมือถือ ‼️ */
+  .extra-btn {
+    left: auto;
+    right: 60px; /* จัดตำแหน่งให้อยู่ข้างๆ ปุ่มควบคุมเพลง */
+  }
 }
 
 /* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับปุ่มพิเศษ (ตามหากระทง) ‼️ --- */
@@ -491,7 +671,7 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 20px;
   padding: 8px 15px;
-  font-family: var(--primary-font);
+  font-family: var(--body-font);
   font-size: 0.9em;
   cursor: pointer;
   backdrop-filter: blur(5px);

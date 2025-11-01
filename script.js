@@ -6,6 +6,7 @@ import {
     collection, 
     addDoc, 
     onSnapshot, 
+    getDocs, // ‼️ เพิ่ม: สำหรับดึงข้อมูลทั้งหมดครั้งเดียว
     query, 
     orderBy, 
     limit,
@@ -76,7 +77,13 @@ const FIREWORK_HUE_MIN = 0; // สีพลุ (Hue) ขั้นต่ำ
 const FIREWORK_HUE_MAX = 360; // สีพลุ (Hue) สูงสุด
 
 // --- ‼️ ส่วนเพิ่มเติม: การจัดการการแสดงผลกระทง ‼️ ---
-const MAX_KRATHONGS_ON_SCREEN = 30; // กำหนดจำนวนกระทงสูงสุดที่จะแสดงบนหน้าจอ
+const MAX_KRATHONGS_ON_SCREEN = 10; // กำหนดจำนวนกระทงสูงสุดที่จะแสดงบนหน้าจอ
+// --- ‼️ แก้ไข: แยกตัวแปรความสูงสำหรับจอแนวนอนและแนวตั้ง ‼️ ---
+const KRATHONG_VERTICAL_POS_MIN_DESKTOP = 5;  // ตำแหน่งต่ำสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
+const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 55; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
+const KRATHONG_VERTICAL_POS_MIN_MOBILE = 15; // ‼️ แก้ไข: ปรับตำแหน่งต่ำสุดสำหรับจอแนวตั้ง
+const KRATHONG_VERTICAL_POS_MAX_MOBILE = 65; // ‼️ แก้ไข: ปรับตำแหน่งสูงสุดสำหรับจอแนวตั้ง
+
 let displayedKrathongs = []; // Array สำหรับเก็บคิวของกระทงที่แสดงอยู่
 
 let fireworks = []; // อาร์เรย์เก็บพลุที่กำลังทำงาน
@@ -215,6 +222,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const createModal = document.getElementById('create-modal');
   const previewModal = document.getElementById('preview-modal');
   const closeBtns = document.querySelectorAll('.close-btn');
+  const notFoundModal = document.getElementById('not-found-modal'); // ‼️ เพิ่ม: Element สำหรับ Modal หากระทงไม่เจอ
+  // --- ‼️ ส่วนเพิ่มเติม: Element สำหรับ Modal รายชื่อ ‼️ ---
+  const listModal = document.getElementById('list-modal');
+  const viewAllBtn = document.getElementById('view-all-btn');
+  const wishListTableBody = document.querySelector('#wish-list-table tbody');
   const submitBtn = document.getElementById('submit-krathong-btn');
   const floatBtn = document.getElementById('float-krathong-btn');
   const counterNumberElem = document.getElementById('counter-number');
@@ -308,6 +320,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
   // --- ‼️ ส่วนเพิ่มเติม: Event Listener สำหรับปุ่มตามหากระทง ‼️ ---
   findMyKrathongBtn.addEventListener('click', findAndHighlightMyKrathong);
 
+  // --- ‼️ ส่วนเพิ่มเติม: Event Listener สำหรับปุ่มดูรายชื่อทั้งหมด ‼️ ---
+  viewAllBtn.addEventListener('click', fetchAllKrathongsAndShowList);
+
   // --- Functions ---
   
   function listenForKrathongs() {
@@ -382,14 +397,28 @@ document.addEventListener('DOMContentLoaded', (event) => {
       krathongWrapper.appendChild(wishElem);
       
       // Randomize animation
-      const animationName = 'floatAcrossReverse';
       const duration = Math.random() * 40 + 60; // ทำให้ช้าลงเป็น 60-100 วินาที
-      const verticalPos = Math.random() * 50 + 5; // 5% to 55% from bottom
+
+      // --- ‼️ แก้ไข: ตรวจสอบการวางแนวของหน้าจอและเลือกใช้ค่าความสูงที่เหมาะสม ‼️ ---
+      let verticalMin, verticalMax;
+      if (window.matchMedia("(orientation: portrait)").matches) {
+        // ใช้ค่าสำหรับจอแนวตั้ง (Mobile)
+        verticalMin = KRATHONG_VERTICAL_POS_MIN_MOBILE;
+        verticalMax = KRATHONG_VERTICAL_POS_MAX_MOBILE;
+      } else {
+        // ใช้ค่าสำหรับจอแนวนอน (Desktop)
+        verticalMin = KRATHONG_VERTICAL_POS_MIN_DESKTOP;
+        verticalMax = KRATHONG_VERTICAL_POS_MAX_DESKTOP;
+      }
+      const verticalRange = verticalMax - verticalMin;
+      const verticalPos = Math.random() * verticalRange + verticalMin;
+
+      // สุ่ม delay ให้มากขึ้น เพื่อให้กระทงที่มาใหม่ไม่ปรากฏพร้อมกันทันที
+      const delay = Math.random() * -duration + (Math.random() * 10); // เพิ่ม delay แบบสุ่มเล็กน้อย
       
-      krathongWrapper.style.animationName = animationName;
       krathongWrapper.style.animationDuration = `${duration}s`;
       krathongWrapper.style.bottom = `${verticalPos}%`;
-      krathongWrapper.style.animationDelay = `${Math.random() * duration * -1}s`; 
+      krathongWrapper.style.animationDelay = `${delay}s`; 
       
       river.appendChild(krathongWrapper);
 
@@ -524,7 +553,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         // ถ้าเจอกระทง, สร้างกระทงพิเศษขึ้นมาแสดงผล
         createMyKrathongElement(docSnap.data());
       } else {
-        alert('ไม่พบกระทงของคุณในระบบแล้ว อาจถูกลบไปตามนโยบาย');
+        notFoundModal.style.display = 'block'; // ‼️ แก้ไข: แสดง Modal ที่สร้างขึ้นมาใหม่
         localStorage.removeItem('myKrathongId'); // ลบ ID ที่ใช้ไม่ได้แล้ว
         findMyKrathongBtn.style.display = 'none'; // ซ่อนปุ่ม
       }
@@ -534,9 +563,80 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   }
 
-  function showToast() {
+  // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับดึงข้อมูลทั้งหมดและแสดงใน Modal ‼️ ---
+  async function fetchAllKrathongsAndShowList() {
+    // 1. แสดง Modal และสถานะกำลังโหลด
+    listModal.style.display = 'block';
+    wishListTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px;">กำลังโหลดรายชื่อ...</td></tr>`;
+
+    try {
+      // 2. สร้าง Query เพื่อดึงข้อมูลทั้งหมด โดยเรียงจากเก่าไปใหม่
+      const q = query(krathongCollectionRef, orderBy("timestamp", "asc"));
+
+      // 3. ดึงข้อมูลด้วย getDocs (ดึงครั้งเดียว)
+      const querySnapshot = await getDocs(q);
+
+      // 4. ล้างข้อมูลเก่าในตาราง
+      wishListTableBody.innerHTML = '';
+
+      if (querySnapshot.empty) {
+        wishListTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 40px;">ยังไม่มีผู้ร่วมลอยกระทง</td></tr>`;
+        return;
+      }
+
+      // 5. วนลูปเพื่อสร้างแถวในตารางสำหรับแต่ละเอกสาร
+      let sequenceNumber = 1; // ตัวแปรสำหรับนับลำดับ
+      querySnapshot.forEach((doc) => {
+        const kData = doc.data();
+        const row = document.createElement('tr');
+
+        // --- Cell 1: ลำดับ ---
+        const seqCell = document.createElement('td');
+        seqCell.textContent = sequenceNumber;
+        seqCell.style.textAlign = 'center';
+
+        // --- Cell 2: Krathong Image ---
+        const imgCell = document.createElement('td');
+        const img = document.createElement('img');
+        img.classList.add('list-krathong-img');
+        
+        // หา src ของรูปภาพจาก krathongType
+        const krathongIndexMatch = kData.krathongType.match(/_(\d+)$/);
+        let imgSrc = KRATHONG_IMAGES[0]; // รูปภาพเริ่มต้น
+        if (krathongIndexMatch && krathongIndexMatch[1]) {
+            const index = parseInt(krathongIndexMatch[1], 10) - 1;
+            if (index >= 0 && index < KRATHONG_IMAGES.length) {
+                imgSrc = KRATHONG_IMAGES[index];
+            }
+        }
+        img.src = imgSrc;
+        imgCell.appendChild(img);
+
+        // --- Cell 3: Name ---
+        const nameCell = document.createElement('td');
+        nameCell.textContent = kData.name;
+
+        // --- Cell 4: Wish ---
+        const wishCell = document.createElement('td');
+        wishCell.textContent = kData.wish;
+
+        row.append(seqCell, imgCell, nameCell, wishCell);
+        wishListTableBody.appendChild(row);
+
+        sequenceNumber++; // เพิ่มค่าลำดับ
+      });
+    } catch (error) {
+      console.error("Error fetching all krathongs:", error);
+      wishListTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: red; padding: 40px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
+    }
+  }
+
+  function showToast(message = 'บันทึกคำอธิษฐานสำเร็จ!') {
     const toast = document.getElementById('toast-notification');
+    // ‼️ แก้ไข: ตั้งค่าข้อความที่ได้รับมา
+    toast.textContent = message;
     toast.className = 'show';
+    // หลังจากแสดงผลเสร็จ, หน่วงเวลาเล็กน้อยก่อนเปลี่ยนข้อความกลับเป็นค่าเริ่มต้น
     setTimeout(() => { toast.className = toast.className.replace('show', ''); }, 3000);
   }
 
