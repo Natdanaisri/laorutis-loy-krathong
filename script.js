@@ -432,14 +432,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
       krathongWrapper.style.bottom = `${verticalPos}%`;
       krathongWrapper.style.animationDelay = `${delay}s`;
 
-      // สุ่มทิศทางการลอย (ซ้ายไปขวา หรือ ขวาไปซ้าย)
-      const isReversed = Math.random() > 0.5;
+      // --- ‼️ แก้ไข: กำหนดให้กระทงลอยจากซ้ายไปขวาเสมอ ‼️ ---
       const orientation = window.matchMedia("(orientation: portrait)").matches ? 'portrait' : 'desktop';
-      if (isReversed) {
-        krathongWrapper.style.animationName = `floatAcrossReverse-${orientation}`;
-      } else {
-        krathongWrapper.style.animationName = `floatAcross-${orientation}`;
-      }
+      krathongWrapper.style.animationName = `floatAcross-${orientation}`;
       
       river.appendChild(krathongWrapper);
 
