@@ -330,25 +330,56 @@ document.addEventListener('DOMContentLoaded', (event) => {
   // --- Functions ---
   
   function listenForKrathongs() {
-    // --- ‼️ แก้ไข Query: ดึงข้อมูลล่าสุดตามจำนวนที่กำหนด (MAX_KRATHONGS_ON_SCREEN) ---
+    // --- ‼️‼️ ตรรกะใหม่: เปลี่ยนจากการดักฟังกระทงล่าสุด มาเป็นการสุ่มกระทงจาก Community ‼️‼️ ---
+    // 1. ดึงข้อมูลกระทงทั้งหมดมาเก็บ ID ไว้ใน Array ก่อน (ทำครั้งเดียวตอนโหลด)
+    let allKrathongIds = [];
+    getDocs(krathongCollectionRef).then(snapshot => {
+      snapshot.forEach(doc => allKrathongIds.push(doc.id));
+      
+      // 2. เริ่มแสดงกระทง Community ทันทีหลังจากได้ ID ทั้งหมด
+      showCommunityKrathongs();
+
+      // 3. ตั้ง Interval ให้สุ่มและแสดงกระทงใหม่ๆ ทุกๆ 10-15 วินาที
+      setInterval(showCommunityKrathongs, Math.random() * 5000 + 10000);
+    });
+
+    async function showCommunityKrathongs() {
+      if (allKrathongIds.length === 0) return; // ถ้ายังไม่มีกระทงเลย ก็ไม่ต้องทำอะไร
+
+      // 4. สุ่ม ID กระทงจาก Array ที่เก็บไว้
+      const randomId = allKrathongIds[Math.floor(Math.random() * allKrathongIds.length)];
+      const myKrathongId = localStorage.getItem('myKrathongId');
+
+      // 5. ไม่ต้องแสดงกระทงของตัวเองซ้ำ ถ้ามันกำลังจะถูกแสดงในฐานะ Community
+      if (randomId === myKrathongId) return;
+
+      // 6. ดึงข้อมูลของกระทงที่สุ่มได้ แล้วนำไปสร้าง Element
+      const docRef = doc(db, "krathongs", randomId);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        createKrathongElement(docSnap.data());
+      }
+    }
+
+    // --- ‼️‼️ ส่วนนี้ยังคงไว้: เพื่อดักฟัง "กระทงใหม่ล่าสุด" ที่เพิ่งสร้าง ‼️‼️ ---
+    // เพื่อให้ผู้ใช้คนอื่นเห็นกระทงที่เพิ่งสร้างใหม่ทันที (แสดงผลแค่ครั้งเดียว)
     const q = query(
       krathongCollectionRef, 
       orderBy("timestamp", "desc"), 
-      limit(MAX_KRATHONGS_ON_SCREEN)
+      limit(1) // สนใจแค่กระทงล่าสุด 1 อันจริงๆ
     );
 
-    // onSnapshot คือการ "ดักฟัง" ข้อมูลแบบ Real-time
     onSnapshot(q, (snapshot) => {
-      // เราจะไม่นับจำนวนจากตรงนี้แล้ว เพราะข้อมูลถูกจำกัดมา
       snapshot.docChanges().forEach((change) => {
-        // เมื่อมีกระทง "ถูกเพิ่ม" (added)
         if (change.type === "added") {
-          // สร้างกระทงใหม่ และจัดการคิวการแสดงผล
-          createKrathongElement(change.doc.data());
+          // ไม่ต้องสร้างกระทงซ้ำถ้าเป็นของตัวเอง (เพราะจะถูกจัดการโดยฟังก์ชัน saveAndFloatKrathong)
+          const myKrathongId = localStorage.getItem('myKrathongId');
+          if (change.doc.id !== myKrathongId) {
+            createKrathongElement(change.doc.data());
+          }
         }
       });
     }, (error) => {
-      // หากเกิดข้อผิดพลาด (เช่น ไม่มี Index) ลิงก์สำหรับสร้าง Index จะแสดงใน Console
       console.error("Error listening for krathongs: ", error);
     });
   }
@@ -356,14 +387,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
   function createKrathongElement(kData) {
       const river = document.getElementById('river');
 
-      // --- ‼️ ส่วนเพิ่มเติม: จัดการคิวการแสดงผล ‼️ ---
-      // 1. ตรวจสอบว่ามีกระทงแสดงผลเกินจำนวนที่กำหนดหรือไม่
-      if (displayedKrathongs.length >= MAX_KRATHONGS_ON_SCREEN) {
-        // 2. ถ้าเกิน, ให้ลบกระทงที่เก่าที่สุด (ตัวแรกใน Array) ออกจาก DOM และอัปเดตข้อมูลเลน
+      // --- ‼️‼️ ตรรกะใหม่: จัดการคิวการแสดงผล ‼️‼️ ---
+      // 1. ตรวจสอบว่ามีกระทง (ที่ไม่ใช่กระทงพิเศษของเรา) เกินจำนวนหรือไม่
+      const communityKrathongs = displayedKrathongs.filter(k => !k.classList.contains('my-krathong-highlight'));
+
+      // MAX_KRATHONGS_ON_SCREEN ตอนนี้จะหมายถึง "กระทงของคนอื่น"
+      // เราจะเผื่อที่ไว้ 1 ที่สำหรับกระทงของเราเสมอ
+      if (communityKrathongs.length >= MAX_KRATHONGS_ON_SCREEN - 1) {
+        // 2. ถ้าเกิน, ให้ลบกระทง "ของคนอื่น" ที่เก่าที่สุดออก
         const oldestKrathong = displayedKrathongs.shift(); // ดึงตัวเก่าสุดออกจาก Array
-        const oldLane = oldestKrathong.dataset.lane; // ดึงข้อมูลเลนจากกระทงเก่า
-        if (oldLane !== undefined) laneOccupancy[oldLane]--; // ลดจำนวนกระทงในเลนนั้น
-        oldestKrathong.remove(); // ลบ Element ออกจากหน้าจอ
+        if (oldestKrathong) {
+            const oldLane = oldestKrathong.dataset.lane;
+            if (oldLane !== undefined) laneOccupancy[oldLane]--;
+            oldestKrathong.remove();
+            // อัปเดต Array ที่แสดงผลอยู่
+            displayedKrathongs = displayedKrathongs.filter(k => k !== oldestKrathong);
+        }
       }
 
       // Create a wrapper div for the krathong image and text
@@ -536,6 +575,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // 1. บันทึก ID ของกระทงที่เพิ่งสร้างลงใน localStorage
       localStorage.setItem('myKrathongId', docRef.id);
       // 2. แสดงปุ่ม "ตามหากระทงของฉัน"
+      findAndHighlightMyKrathong(); // ‼️‼️ เรียกฟังก์ชันเพื่อแสดงกระทงของตัวเองทันที ‼️‼️
+
       findMyKrathongBtn.style.display = 'block';
 
       // --- ‼️ ส่วนเพิ่มเติม: อัปเดตจำนวนกระทงบนหน้าจอทันที ‼️ ---
@@ -595,7 +636,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
       if (docSnap.exists()) {
         // ถ้าเจอกระทง, สร้างกระทงพิเศษขึ้นมาแสดงผล
-        createMyKrathongElement(docSnap.data());
+        const krathongData = docSnap.data();
+        // เพิ่ม ID เข้าไปในข้อมูล เพื่อใช้ตรวจสอบได้ง่ายขึ้น
+        krathongData.id = docSnap.id; 
+        createMyKrathongElement(krathongData);
+
       } else {
         notFoundModal.style.display = 'block'; // ‼️ แก้ไข: แสดง Modal ที่สร้างขึ้นมาใหม่
         localStorage.removeItem('myKrathongId'); // ลบ ID ที่ใช้ไม่ได้แล้ว
