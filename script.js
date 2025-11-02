@@ -849,7 +849,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
       }
       // ถ้าไม่ได้อยู่ในโหมดพิเศษ ให้แสดงปุ่ม toggle ตามปกติ
       else if (isAdmin) {
-      if (isAdmin) {
         // เพิ่มปุ่มเปิด/ปิดโหมดพิเศษ (หากยังไม่มี)
         if (!document.getElementById('special-mode-toggle-btn')) {
           const specialModeBtn = document.createElement('button');
@@ -868,7 +867,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
           adminHeader.textContent = 'จัดการ';
           tableHeader.appendChild(adminHeader);
         }
-      } else {
         // ถ้าไม่เป็น Admin ให้ซ่อนปุ่มโหมดพิเศษ (ถ้ามี)
         document.getElementById('special-mode-toggle-btn')?.remove();
       }
