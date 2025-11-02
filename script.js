@@ -546,10 +546,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
       krathongWrapper.dataset.lane = laneIndex;
 
       // 2. คำนวณตำแหน่งแนวตั้งตามเลน
-      const laneHeight = (verticalMax - verticalMin) / NUMBER_OF_LANES;
-      // เพิ่มการสุ่มเล็กน้อยในแต่ละเลน เพื่อไม่ให้กระทงเรียงเป็นเส้นตรงเป๊ะ
-      const randomOffset = (Math.random() - 0.5) * laneHeight * 0.5; 
-      const verticalPos = verticalMin + (laneIndex * laneHeight) + (laneHeight / 2) + randomOffset;
+      // --- ‼️‼️ แก้ไข: ปรับ Logic การคำนวณตำแหน่งเลนใหม่ ‼️‼️ ---
+      // ให้เลนกระจายตัวเต็มพื้นที่ (ล่างสุด, กลาง, บนสุด)
+      let verticalPos;
+      if (laneIndex === 0) {
+        // เลนที่ 0 (ไกลสุด) -> อยู่ตำแหน่งบนสุดของพื้นที่
+        verticalPos = verticalMax;
+      } else if (laneIndex === 1) {
+        // เลนที่ 1 (กลาง) -> อยู่ตำแหน่งกึ่งกลาง
+        verticalPos = (verticalMin + verticalMax) / 2;
+      } else { // laneIndex === 2
+        // เลนที่ 2 (ใกล้สุด) -> อยู่ตำแหน่งล่างสุดของพื้นที่
+        verticalPos = verticalMin;
+      }
       
       // --- ‼️ ส่วนเพิ่มเติม: จำลองมิติความลึก (Perspective) ‼️ ---
       // กระทงที่อยู่ไกล (ด้านบน, laneIndex น้อย) จะเล็กและช้า
