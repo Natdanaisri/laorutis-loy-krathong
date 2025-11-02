@@ -80,13 +80,13 @@ const FIREWORK_HUE_MAX = 360; // สีพลุ (Hue) สูงสุด
 // --- ‼️ ส่วนเพิ่มเติม: การจัดการการแสดงผลกระทง ‼️ ---
 const MAX_KRATHONGS_ON_SCREEN = 10; // กำหนดจำนวนกระทงสูงสุดที่จะแสดงบนหน้าจอ
 // --- ‼️ แก้ไข: แยกตัวแปรความสูงสำหรับจอแนวนอนและแนวตั้ง ‼️ ---
-const KRATHONG_VERTICAL_POS_MIN_DESKTOP = 5;  // ตำแหน่งต่ำสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
-const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 45; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
-const KRATHONG_VERTICAL_POS_MIN_MOBILE = 30; // ‼️ แก้ไข: ปรับตำแหน่งต่ำสุดสำหรับจอแนวตั้ง
-const KRATHONG_VERTICAL_POS_MAX_MOBILE = 75; // ‼️ แก้ไข: ปรับตำแหน่งสูงสุดสำหรับจอแนวตั้ง
+const KRATHONG_VERTICAL_POS_MIN_DESKTOP = 10;  // ตำแหน่งต่ำสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
+const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 40; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
+const KRATHONG_VERTICAL_POS_MIN_MOBILE = 35; // ‼️ แก้ไข: ปรับตำแหน่งต่ำสุดสำหรับจอแนวตั้ง
+const KRATHONG_VERTICAL_POS_MAX_MOBILE = 70; // ‼️ แก้ไข: ปรับตำแหน่งสูงสุดสำหรับจอแนวตั้ง
 
 // --- ‼️ ส่วนเพิ่มเติม: การจัดการเลนเพื่อป้องกันกระทงซ้อนกัน ‼️ ---
-const NUMBER_OF_LANES = 5; // แบ่งพื้นที่แสดงผลออกเป็น 5 เลน (เหมือนเดิม)
+const NUMBER_OF_LANES = 3; // แบ่งพื้นที่แสดงผลออกเป็น 3 เลน
 // --- ‼️‼️ แก้ไข: เปลี่ยนโครงสร้างการติดตามเลน ‼️‼️ ---
 // ตอนนี้จะเก็บ object ของกระทงล่าสุดในแต่ละเลน แทนการนับจำนวน
 let lanes = Array.from({ length: NUMBER_OF_LANES }, () => ({ lastKrathong: null, count: 0 }));
