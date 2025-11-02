@@ -81,7 +81,7 @@ const FIREWORK_HUE_MAX = 360; // สีพลุ (Hue) สูงสุด
 const MAX_KRATHONGS_ON_SCREEN = 10; // กำหนดจำนวนกระทงสูงสุดที่จะแสดงบนหน้าจอ
 // --- ‼️ แก้ไข: แยกตัวแปรความสูงสำหรับจอแนวนอนและแนวตั้ง ‼️ ---
 const KRATHONG_VERTICAL_POS_MIN_DESKTOP = 5;  // ตำแหน่งต่ำสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
-const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 55; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
+const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 45; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
 const KRATHONG_VERTICAL_POS_MIN_MOBILE = 30; // ‼️ แก้ไข: ปรับตำแหน่งต่ำสุดสำหรับจอแนวตั้ง
 const KRATHONG_VERTICAL_POS_MAX_MOBILE = 75; // ‼️ แก้ไข: ปรับตำแหน่งสูงสุดสำหรับจอแนวตั้ง
 
@@ -311,6 +311,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
   
   // --- ‼️ ส่วนเพิ่มเติม: ตรวจสอบและแสดงปุ่ม "ตามหากระทง" เมื่อโหลดหน้า ‼️ ---
   checkAndShowFindMyKrathongButton();
+
+  // --- ‼️ ส่วนเพิ่มเติม: ตรวจสอบและเปิดใช้งานโหมดพิเศษเมื่อโหลดหน้า ‼️ ---
+  initializeSpecialMode();
 
 
   // --- Event Listeners ---
@@ -744,6 +747,24 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   }
 
+  // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับจัดการโหมดพิเศษ (จอสัมผัส) ‼️‼️ ---
+  function initializeSpecialMode() {
+    if (localStorage.getItem('specialModeActive') === 'true') {
+      document.body.classList.add('special-touch-mode');
+    }
+  }
+
+  function toggleSpecialMode() {
+    const isActive = document.body.classList.toggle('special-touch-mode');
+    if (isActive) {
+      localStorage.setItem('specialModeActive', 'true');
+      showToast('เปิดใช้งานโหมดจอสัมผัส');
+    } else {
+      localStorage.removeItem('specialModeActive');
+      showToast('ปิดใช้งานโหมดจอสัมผัส');
+    }
+  }
+
 
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับดึงข้อมูลทั้งหมดและแสดงใน Modal ‼️ ---
   async function fetchAllKrathongsAndShowList() {
@@ -768,12 +789,31 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
       // 5. วนลูปเพื่อสร้างแถวในตารางสำหรับแต่ละเอกสาร
       // ‼️‼️ แก้ไข: เพิ่มหัวตารางสำหรับ Admin ‼️‼️
+      const listContent = document.querySelector('#list-modal .list-content');
       const tableHeader = document.querySelector('#wish-list-table thead tr');
-      if (isAdmin && !document.getElementById('admin-actions-header')) {
-        const adminHeader = document.createElement('th');
-        adminHeader.id = 'admin-actions-header';
-        adminHeader.textContent = 'จัดการ';
-        tableHeader.appendChild(adminHeader);
+
+      if (isAdmin) {
+        // เพิ่มปุ่มเปิด/ปิดโหมดพิเศษ (หากยังไม่มี)
+        if (!document.getElementById('special-mode-toggle-btn')) {
+          const specialModeBtn = document.createElement('button');
+          specialModeBtn.id = 'special-mode-toggle-btn';
+          specialModeBtn.textContent = '🖥️ เปิด/ปิด โหมดจอสัมผัส';
+          specialModeBtn.style.cssText = 'background-color: #ff9800; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; margin-bottom: 20px;';
+          specialModeBtn.onclick = toggleSpecialMode;
+          // ใส่ปุ่มไว้บนสุดของ modal content
+          listContent.insertBefore(specialModeBtn, listContent.firstChild);
+        }
+
+        // เพิ่มหัวตาราง "จัดการ" (หากยังไม่มี)
+        if (!document.getElementById('admin-actions-header')) {
+          const adminHeader = document.createElement('th');
+          adminHeader.id = 'admin-actions-header';
+          adminHeader.textContent = 'จัดการ';
+          tableHeader.appendChild(adminHeader);
+        }
+      } else {
+        // ถ้าไม่เป็น Admin ให้ซ่อนปุ่มโหมดพิเศษ (ถ้ามี)
+        document.getElementById('special-mode-toggle-btn')?.remove();
       }
 
       let sequenceNumber = 1; // ตัวแปรสำหรับนับลำดับ
