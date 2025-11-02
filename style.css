@@ -156,7 +156,8 @@ body, html {
   width: var(--krathong-size-desktop); /* ใช้ตัวแปรสำหรับขนาดแนวนอน */
   height: auto;
   /* --- ‼️ แก้ไข: animation จะถูกกำหนดโดย JavaScript เพื่อสุ่มทิศทาง ‼️ --- */
-  animation: none 80s linear infinite;
+  /* animation-name, duration, และ delay ถูกกำหนดโดย script.js */
+  animation: none 80s linear infinite; 
   transform-origin: center bottom;
   opacity: 1; /* --- ‼️ แก้ไข: ทำให้กระทงทึบแสง (ไม่โปร่งใส) ‼️ --- */
   display: flex; /* Use flexbox for centering content */

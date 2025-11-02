@@ -269,27 +269,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
   // --- ‼️‼️ ส่วนเพิ่มเติม: ตรวจสอบว่าอยู่ในโหมด Kiosk หรือไม่ ‼️‼️ ---
   const isKioskMode = document.body.classList.contains('kiosk-mode');
 
-  // --- ถ้าไม่ใช่โหมด Kiosk ให้ทำงานตามปกติ ---
-  if (!isKioskMode) {
-
-  // --- แก้ไข: สร้างภาพตัวอย่าง (thumbnails) สำหรับนำทาง ---
+  // --- ‼️‼️ แก้ไข: ย้ายการสร้าง thumbnails มาไว้ที่เดียว เพื่อให้ใช้ได้ทั้ง 2 โหมด ‼️‼️ ---
   KRATHONG_IMAGES.forEach((src, index) => {
     const thumb = document.createElement('img'); // เปลี่ยนจาก div เป็น img
     thumb.src = src; // กำหนด src ของรูปภาพ
     thumb.classList.add('krathong-thumbnail'); // ใช้ class ใหม่
     thumb.dataset.index = index;
     thumb.addEventListener('click', () => showKrathong(index));
-    dotsContainer.appendChild(thumb);
+    // ตรวจสอบให้แน่ใจว่า dotsContainer มีอยู่จริงก่อนที่จะเพิ่มเข้าไป
+    if (dotsContainer) {
+      dotsContainer.appendChild(thumb);
+    }
   });
 
-  // --- Event Listeners สำหรับปุ่มลูกศร ---
-  // (เฉพาะหน้าที่ไม่ใช่ Kiosk เพราะใน Kiosk มีปุ่มนี้อยู่แล้ว)
-  if (prevBtn && nextBtn) {
-    prevBtn.addEventListener('click', () => showKrathong(currentKrathongIndex - 1));
-    nextBtn.addEventListener('click', () => showKrathong(currentKrathongIndex + 1));
-  }
-
-  } else {
+  if (isKioskMode) {
     // --- ถ้าเป็นโหมด Kiosk ---
     // ไม่ต้องสร้างปุ่มควบคุมเพลง, ปุ่ม admin, ปุ่มตามหากระทง ฯลฯ
     // ซ่อน element ที่ไม่ต้องการให้แสดงในโหมด Kiosk
@@ -297,6 +290,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const elem = document.getElementById(id);
         if (elem) elem.style.display = 'none';
     });
+  } else {
+    // --- ถ้าไม่ใช่โหมด Kiosk ให้ทำงานตามปกติ ---
+    // (โค้ดส่วนนี้จะทำงานเฉพาะใน index.html)
+    listenForKrathongs();
+    updateTotalKrathongCount();
+    checkAndShowFindMyKrathongButton();
   }
 
   const thumbnails = document.querySelectorAll('.krathong-thumbnail'); // เลือก element ด้วย class ใหม่
@@ -315,8 +314,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
     krathongPreviewImg.src = krathongSrc;
 
     // อัปเดตสถานะ active ของภาพตัวอย่าง (thumbnails)
-    thumbnails.forEach(thumb => thumb.classList.remove('active'));
-    thumbnails[currentKrathongIndex].classList.add('active');
+    if (thumbnails.length > 0) {
+      thumbnails.forEach(thumb => thumb.classList.remove('active'));
+      thumbnails[currentKrathongIndex].classList.add('active');
+    }
 
     // อัปเดตข้อมูลกระทงที่เลือก
     selectedKrathongType = {
@@ -326,24 +327,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
   }
 
   // --- Initial Load & Real-time Listener ---
-  // --- ‼️‼️ แก้ไข: สร้าง thumbnails สำหรับ Kiosk mode ด้วย ‼️‼️ ---
-  if (isKioskMode) {
-    KRATHONG_IMAGES.forEach((src, index) => {
-      const thumb = document.createElement('img');
-      thumb.src = src;
-      thumb.classList.add('krathong-thumbnail');
-      thumb.dataset.index = index;
-      thumb.addEventListener('click', () => showKrathong(index));
-      dotsContainer.appendChild(thumb);
-    });
-  }
-
-  // --- ‼️‼️ แก้ไข: ถ้าไม่ใช่โหมด Kiosk ให้เริ่มฟังและแสดงกระทง ‼️‼️ ---
-  if (!isKioskMode) {
-    listenForKrathongs();
-    updateTotalKrathongCount();
-    checkAndShowFindMyKrathongButton();
-  }
 
   showKrathong(0); // แสดงกระทงแรกเมื่อโหลด
 
@@ -585,7 +568,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const orientation = isPortrait ? 'portrait' : 'desktop';
 
       // --- ‼️‼️ แก้ไข: ตรรกะการหน่วงเวลาอัจฉริยะ ‼️‼️ ---
-      let delay = 0;
+      // --- ‼️‼️‼️ การปรับปรุง: เพิ่มการสุ่ม Delay เริ่มต้น (Staggered Start) ‼️‼️‼️ ---
+      // สุ่มเวลาหน่วงเพิ่มเติม 0 ถึง 4 วินาที เพื่อทำลายการเกาะกลุ่มในแนวตั้ง
+      let randomInitialDelay = Math.random() * 4;
+      let delay = randomInitialDelay;
       const lastKrathongInLane = lanes[laneIndex].lastKrathong;
       if (lastKrathongInLane) {
         const timeSinceLast = Date.now() - lastKrathongInLane.startTime;
