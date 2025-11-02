@@ -117,6 +117,18 @@
     </div>
   </div>
 
+  <!-- ‼️ ส่วนเพิ่มเติม: Modal 5: Admin Login ‼️ -->
+  <div id="admin-login-modal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+      <span class="close-btn" data-modal="admin-login-modal">&times;</span>
+      <h2>สำหรับผู้ดูแลระบบ</h2>
+      <p>กรุณาใส่รหัสผ่านเพื่อเข้าสู่ระบบ</p>
+      <input type="password" id="admin-password" placeholder="รหัสผ่าน" style="margin-top: 15px; text-align: center;">
+      <button id="admin-login-btn" style="background-color: #007bff; width: auto; padding: 10px 30px;">เข้าสู่ระบบ</button>
+      <p id="admin-error-msg" style="color: red; display: none; margin-top: 10px;">รหัสผ่านไม่ถูกต้อง</p>
+    </div>
+  </div>
+
   <!-- ‼️ ส่วนเพิ่มเติม: Modal 4: Krathong Not Found ‼️ -->
   <div id="not-found-modal" class="modal">
     <div class="modal-content" style="max-width: 420px;">
@@ -149,6 +161,9 @@
 
   <!-- ‼️ ส่วนเพิ่มเติม: ปุ่มสำหรับตามหากระทงของฉัน (ซ่อนไว้ก่อน) ‼️ -->
   <button id="find-my-krathong-btn" class="extra-btn" style="display: none;">🔍</button>
+
+  <!-- ‼️ ส่วนเพิ่มเติม: ปุ่มสำหรับ Admin Login ‼️ -->
+  <button id="admin-entry-btn" class="extra-btn" style="left: auto; right: 15px;">⚙️</button>
 
   <!-- 
     นี่คือส่วนที่เปลี่ยนไป: 

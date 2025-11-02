@@ -14,7 +14,8 @@ import {
     connectFirestoreEmulator,
     doc,
     getDoc,
-    getCountFromServer // ‼️ เพิ่ม: สำหรับนับจำนวนเอกสาร
+    getCountFromServer, // ‼️ เพิ่ม: สำหรับนับจำนวนเอกสาร
+    updateDoc, deleteDoc // ‼️ เพิ่ม: สำหรับแก้ไขและลบเอกสาร
 } from "https://www.gstatic.com/firebasejs/12.4.0/firebase-firestore.js";
 
 // 2. ใช้ firebaseConfig ของครูไบร์ทที่ให้มา
@@ -99,6 +100,10 @@ let communityKrathongPool = []; // คลัง ID ที่ยังไม่�
 let fireworks = []; // อาร์เรย์เก็บพลุที่กำลังทำงาน
 let particles = []; // อาร์เรย์เก็บอนุภาคที่กำลังทำงาน
 let lastFireworkTime = 0; // เวลาล่าสุดที่ยิงพลุ
+
+// --- ‼️‼️ ส่วนเพิ่มเติม: การจัดการ Admin ‼️‼️ ---
+const ADMIN_PASSWORD = "laor7378"; // ตั้งรหัสผ่านที่นี่
+let isAdmin = false; // สถานะการเป็น Admin
 
 // --- Fireworks Canvas Elements ---
 let fireworksCanvas;
@@ -245,6 +250,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const findMyKrathongBtn = document.getElementById('find-my-krathong-btn');
   let myKrathongElement = null; // สำหรับเก็บกระทงพิเศษของเรา
 
+  // --- ‼️‼️ ส่วนเพิ่มเติม: Element สำหรับ Admin ‼️‼️ ---
+  const adminEntryBtn = document.getElementById('admin-entry-btn');
+  const adminLoginModal = document.getElementById('admin-login-modal');
+  const adminLoginBtn = document.getElementById('admin-login-btn');
+
   const musicControlBtn = document.getElementById('music-control-btn');
   const backgroundMusic = document.getElementById('background-music');
   let isMusicPlaying = false; // สถานะของเพลง
@@ -332,6 +342,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
   // --- ‼️ ส่วนเพิ่มเติม: Event Listener สำหรับปุ่มดูรายชื่อทั้งหมด ‼️ ---
   viewAllBtn.addEventListener('click', fetchAllKrathongsAndShowList);
+
+  // --- ‼️‼️ ส่วนเพิ่มเติม: Event Listeners สำหรับ Admin ‼️‼️ ---
+  adminEntryBtn.addEventListener('click', () => adminLoginModal.style.display = 'block');
+  adminLoginBtn.addEventListener('click', handleAdminLogin);
+  // ทำให้กด Enter ในช่อง password แล้ว login ได้
+  document.getElementById('admin-password').addEventListener('keyup', (e) => { if (e.key === 'Enter') handleAdminLogin(); });
 
   // --- Functions ---
   
@@ -526,7 +542,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
       krathongWrapper.style.animationDuration = `${animationDuration}s`;
       krathongWrapper.style.bottom = `${verticalPos}%`;
       krathongWrapper.style.animationDelay = `${delay}s`;
-      krathongWrapper.style.zIndex = 10 + laneIndex;
+      // --- ‼️‼️ แก้ไข: ปรับ z-index ตามหลัก Perspective ‼️‼️ ---
+      // กระทงที่อยู่ใกล้ (verticalPos น้อย) ควรมี z-index สูงกว่า
+      // เราจะใช้ค่า 100 ลบด้วยตำแหน่งแนวตั้ง เพื่อให้กระทงที่อยู่ด้านล่างสุด (เช่น bottom: 5%) มี z-index สูงสุด (z-index: 95)
+      krathongWrapper.style.zIndex = Math.floor(100 - verticalPos);
       krathongWrapper.style.transform = `scale(${scale})`;
       // --- ‼️‼️ แก้ไข: กำหนด animation-name และล้างค่า left ที่ซ่อนไว้ออก ‼️‼️ ---
       // ใช้ requestAnimationFrame เพื่อให้แน่ใจว่าเบราว์เซอร์ได้ประมวลผลสไตล์เริ่มต้น (ที่ซ่อนไว้) ก่อน
@@ -705,6 +724,27 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   }
 
+  // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับจัดการการ Login ของ Admin ‼️‼️ ---
+  function handleAdminLogin() {
+    const passwordInput = document.getElementById('admin-password');
+    const errorMsg = document.getElementById('admin-error-msg');
+    
+    if (passwordInput.value === ADMIN_PASSWORD) {
+      isAdmin = true;
+      adminLoginModal.style.display = 'none';
+      passwordInput.value = ''; // ล้างรหัสผ่าน
+      errorMsg.style.display = 'none';
+      showToast('เข้าสู่ระบบผู้ดูแลสำเร็จ!');
+      // เปิดหน้าต่างรายชื่อในโหมด Admin ทันที
+      fetchAllKrathongsAndShowList();
+    } else {
+      isAdmin = false;
+      errorMsg.style.display = 'block';
+      passwordInput.select();
+    }
+  }
+
+
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับดึงข้อมูลทั้งหมดและแสดงใน Modal ‼️ ---
   async function fetchAllKrathongsAndShowList() {
     // 1. แสดง Modal และสถานะกำลังโหลด
@@ -727,12 +767,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
       }
 
       // 5. วนลูปเพื่อสร้างแถวในตารางสำหรับแต่ละเอกสาร
+      // ‼️‼️ แก้ไข: เพิ่มหัวตารางสำหรับ Admin ‼️‼️
+      const tableHeader = document.querySelector('#wish-list-table thead tr');
+      if (isAdmin && !document.getElementById('admin-actions-header')) {
+        const adminHeader = document.createElement('th');
+        adminHeader.id = 'admin-actions-header';
+        adminHeader.textContent = 'จัดการ';
+        tableHeader.appendChild(adminHeader);
+      }
+
       let sequenceNumber = 1; // ตัวแปรสำหรับนับลำดับ
       querySnapshot.forEach((doc) => {
         const kData = doc.data();
         const row = document.createElement('tr');
 
-        // --- Cell 1: ลำดับ ---
+        // --- Cell 1: ลำดับ
         const seqCell = document.createElement('td');
         seqCell.textContent = sequenceNumber;
         seqCell.style.textAlign = 'center';
@@ -754,15 +803,37 @@ document.addEventListener('DOMContentLoaded', (event) => {
         img.src = imgSrc;
         imgCell.appendChild(img);
 
-        // --- Cell 3: Name ---
+        // --- Cell 3: Name
         const nameCell = document.createElement('td');
         nameCell.textContent = kData.name;
 
-        // --- Cell 4: Wish ---
+        // --- Cell 4: Wish
         const wishCell = document.createElement('td');
         wishCell.textContent = kData.wish;
 
         row.append(seqCell, imgCell, nameCell, wishCell);
+
+        // --- ‼️‼️ ส่วนเพิ่มเติม: สร้างปุ่มสำหรับ Admin ‼️‼️ ---
+        if (isAdmin) {
+          const actionCell = document.createElement('td');
+
+          // ปุ่มแก้ไข
+          const editBtn = document.createElement('button');
+          editBtn.textContent = 'แก้ไข';
+          editBtn.classList.add('admin-action-btn', 'edit-btn');
+          editBtn.onclick = () => editKrathong(doc.id, kData.name, kData.wish);
+
+          // ปุ่มลบ
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = 'ลบ';
+          deleteBtn.classList.add('admin-action-btn', 'delete-btn');
+          deleteBtn.onclick = () => deleteKrathong(doc.id);
+
+          actionCell.append(editBtn, deleteBtn);
+          row.appendChild(actionCell);
+        }
+        // --- สิ้นสุดส่วนของ Admin ---
+
         wishListTableBody.appendChild(row);
 
         sequenceNumber++; // เพิ่มค่าลำดับ
@@ -770,6 +841,53 @@ document.addEventListener('DOMContentLoaded', (event) => {
     } catch (error) {
       console.error("Error fetching all krathongs:", error);
       wishListTableBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: red; padding: 40px;">เกิดข้อผิดพลาดในการโหลดข้อมูล</td></tr>`;
+    }
+  }
+
+  // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับแก้ไขกระทง (Admin) ‼️‼️ ---
+  function editKrathong(id, currentName, currentWish) {
+    const newName = prompt("แก้ไขชื่อ:", currentName);
+    // ถ้าผู้ใช้กด Cancel, prompt จะคืนค่า null
+    if (newName === null) return; 
+
+    const newWish = prompt("แก้ไขคำอธิษฐาน:", currentWish);
+    if (newWish === null) return;
+
+    if (confirm(`คุณต้องการบันทึกการเปลี่ยนแปลงสำหรับกระทงนี้ใช่หรือไม่?`)) {
+      const docRef = doc(db, "krathongs", id);
+      updateDoc(docRef, {
+        name: newName.trim(),
+        wish: newWish.trim()
+      }).then(() => {
+        showToast('แก้ไขข้อมูลสำเร็จ!');
+        // โหลดข้อมูลในตารางใหม่
+        fetchAllKrathongsAndShowList();
+      }).catch(error => {
+        console.error("Error updating document: ", error);
+        alert('เกิดข้อผิดพลาดในการแก้ไขข้อมูล');
+      });
+    }
+  }
+
+  // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับลบกระทง (Admin) ‼️‼️ ---
+  function deleteKrathong(id) {
+    if (confirm('คุณแน่ใจหรือไม่ว่าต้องการลบกระทงนี้? การกระทำนี้ไม่สามารถย้อนกลับได้')) {
+      const docRef = doc(db, "krathongs", id);
+      deleteDoc(docRef).then(() => {
+        showToast('ลบกระทงสำเร็จ!');
+        // โหลดข้อมูลในตารางใหม่
+        fetchAllKrathongsAndShowList();
+        // อัปเดตจำนวนกระทงทั้งหมด
+        updateTotalKrathongCount();
+        // หากกระทงที่ถูกลบเป็นกระทงของฉัน ให้ลบออกจาก localStorage ด้วย
+        if (localStorage.getItem('myKrathongId') === id) {
+          localStorage.removeItem('myKrathongId');
+          findMyKrathongBtn.style.display = 'none';
+        }
+      }).catch(error => {
+        console.error("Error deleting document: ", error);
+        alert('เกิดข้อผิดพลาดในการลบข้อมูล');
+      });
     }
   }
 
