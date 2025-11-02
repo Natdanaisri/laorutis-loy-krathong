@@ -91,10 +91,11 @@ const KRATHONG_ANIMATION_DURATION = 100; // ‼️‼️ เพิ่ม: กำ
 const NUM_LANES = 3; // กำหนดจำนวนเลนแนวนอน 3 เลน
 // สร้างโครงสร้างข้อมูลสำหรับ Lanes: Array 1 มิติ
 // แต่ละช่องจะเก็บ krathongElement หรือ null (ถ้าว่าง)
-let lanes = Array(NUM_LANES).fill(null);
 let lanePositions = []; // Array สำหรับเก็บค่า bottom ของแต่ละเลน
 let displayedKrathongs = []; // Array สำหรับเก็บคิวของกระทงที่แสดงอยู่
 
+// --- ‼️‼️ ตรรกะใหม่: ติดตามกระทงในแต่ละเลนเพื่อจัดการการหน่วงเวลา ‼️‼️ ---
+let krathongsInLanes = Array(NUM_LANES).fill(null).map(() => ({ lastStartTime: 0 }));
 // --- ‼️‼️ ส่วนเพิ่มเติม: คลังสำหรับสุ่มกระทง Community ‼️‼️ ---
 let allKrathongIds = []; // เก็บ ID กระทงทั้งหมด
 let communityKrathongPool = []; // คลัง ID ที่ยังไม่ได้สุ่มแสดง
@@ -506,25 +507,23 @@ document.addEventListener('DOMContentLoaded', (event) => {
   function createKrathongElement(kData) {
       const river = document.getElementById('river');
 
-      // --- ‼️‼️ แก้ไข: กำหนดจำนวนกระทงสูงสุดตามแนวของจอ ‼️‼️ ---
-      const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-      const maxKrathongsForDevice = NUM_LANES; // จำนวนกระทงสูงสุดเท่ากับจำนวนเลน
+      // --- ‼️‼️ ตรรกะใหม่: ตรวจสอบและหน่วงเวลาในแต่ละเลน ‼️‼️ ---
+      // 1. สุ่มเลนที่จะปล่อยกระทง
+      const laneIndex = Math.floor(Math.random() * NUM_LANES);
 
-      // --- ‼️‼️ แก้ไข: ตรรกะการจัดการคิวการแสดงผล ‼️‼️ ---
-      // 1. ตรวจสอบว่ามีกระทง (ที่ไม่ใช่กระทงพิเศษของเรา) เกินจำนวนหรือไม่
-      const communityKrathongs = displayedKrathongs.filter(k => !k.classList.contains('my-krathong-highlight'));
+      // 2. คำนวณเวลาหน่วงที่จำเป็นสำหรับเลนนั้นๆ
+      const now = Date.now();
+      const requiredLaneDelayMs = 30000; // ‼️ กำหนดให้กระทงใน "เลนเดียวกัน" ห่างกันอย่างน้อย 30 วินาที
+      const timeSinceLastInLane = now - krathongsInLanes[laneIndex].lastStartTime;
+      let delay = 0;
 
-      if (communityKrathongs.length >= maxKrathongsForDevice) {
-        // 2. ถ้าเกิน, ให้ลบกระทง "ของคนอื่น" ที่เก่าที่สุดออก (โค้ดเดิมยังใช้ได้ แต่ตอนนี้ไม่จำเป็นแล้ว เพราะเราจะจัดการเมื่อ animation จบ)
-        const oldestKrathong = displayedKrathongs.shift(); // ดึงตัวเก่าสุดออกจาก Array
-        if (oldestKrathong) {
-          // คืนเลนให้ว่าง
-          const oldLaneIndex = parseInt(oldestKrathong.dataset.lane, 10);
-          if (!isNaN(oldLaneIndex) && lanes[oldLaneIndex] === oldestKrathong) lanes[oldLaneIndex] = null;
-          oldestKrathong.remove();
-        }
+      if (timeSinceLastInLane < requiredLaneDelayMs) {
+        // ถ้ากระทงล่าสุดในเลนนี้เพิ่งถูกปล่อยไปไม่นาน ให้หน่วงเวลากระทงใหม่
+        delay = (requiredLaneDelayMs - timeSinceLastInLane) / 1000;
       }
 
+      // 3. อัปเดตเวลาล่าสุดของกระทงที่ถูกปล่อยในเลนนี้ (รวมเวลาหน่วง)
+      krathongsInLanes[laneIndex].lastStartTime = now + (delay * 1000);
       // Create a wrapper div for the krathong image and text
       const krathongWrapper = document.createElement('div');
       krathongWrapper.classList.add('floating-krathong-wrapper');
@@ -568,22 +567,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const duration = Math.random() * 40 + 60; // ทำให้ช้าลงเป็น 60-100 วินาที
 
       // --- ‼️‼️ แก้ไข: ปรับปรุงการใช้ระบบเลน (Lane) ‼️‼️ ---
-      let verticalMin, verticalMax;
-      if (isPortrait) {
-        verticalMin = KRATHONG_VERTICAL_POS_MIN_MOBILE;
-        verticalMax = KRATHONG_VERTICAL_POS_MAX_MOBILE;
-      } else {
-        verticalMin = KRATHONG_VERTICAL_POS_MIN_DESKTOP;
-        verticalMax = KRATHONG_VERTICAL_POS_MAX_DESKTOP;
-      }
-
-      // --- ‼️‼️ ตรรกะใหม่: ใช้ระบบเลน (Lane System) ‼️‼️ ---
-      // 1. หาเลนที่ว่าง
-      const laneIndex = findEmptyLane();
-      if (laneIndex === -1) return; // ถ้าไม่มีเลนว่างเลย ก็ไม่ต้องสร้างกระทง
-
-      lanes[laneIndex] = krathongWrapper; // จองเลน
-      krathongWrapper.dataset.lane = laneIndex;
+      const isPortrait = window.matchMedia("(orientation: portrait)").matches;
 
       // 2. คำนวณตำแหน่งแนวตั้งจาก "เลน" ที่ได้
       let verticalPos = lanePositions[laneIndex];
@@ -598,20 +582,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
       const direction = 'floatAcross';
       const orientation = isPortrait ? 'portrait' : 'desktop';
-
-      // --- ‼️‼️ แก้ไข: ตรรกะการหน่วงเวลาอัจฉริยะ (Global Delay) ‼️‼️ ---
-      // ตรวจสอบเวลาจากกระทงล่าสุดที่ถูกปล่อย "จากทุกเลน" เพื่อป้องกันการซ้อนกัน
-      const now = Date.now();
-      const timeSinceLastGlobal = now - globalLastKrathongStartTime;
-      const requiredDelayMs = 4000; // ‼️ กำหนดให้กระทงแต่ละอันห่างกันอย่างน้อย 4 วินาที
-      let delay = 0; // ค่าหน่วงเวลา (หน่วยเป็นวินาที)
-
-      if (timeSinceLastGlobal < requiredDelayMs) {
-        // ถ้ากระทงล่าสุดเพิ่งถูกปล่อยไปไม่นาน ให้หน่วงเวลากระทงใหม่
-        delay = (requiredDelayMs - timeSinceLastGlobal) / 1000;
-      }
-      // อัปเดตเวลาล่าสุดของกระทงที่ถูกปล่อย (รวมเวลาหน่วง)
-      globalLastKrathongStartTime = now + (delay * 1000);
 
       krathongWrapper.style.animationDuration = `${animationDuration}s`;
       krathongWrapper.style.bottom = `${verticalPos}%`;
@@ -636,19 +606,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
       // --- ‼️‼️ เพิ่มเติม: เมื่อ animation จบ ให้ลบ element และคืนเลนให้ว่าง ‼️‼️ ---
       krathongWrapper.addEventListener('animationend', () => {
-        // คืนเลนให้ว่าง
-        lanes[laneIndex] = null;
         // ลบ element ออกจาก DOM
         krathongWrapper.remove();
         // ลบออกจากคิวที่แสดงผล
         const indexInQueue = displayedKrathongs.indexOf(krathongWrapper);
         if (indexInQueue > -1) displayedKrathongs.splice(indexInQueue, 1);
       }, { once: true }); // ให้ event listener ทำงานแค่ครั้งเดียว
-  }
-
-  // --- ‼️‼️ ฟังก์ชันใหม่: หาเลนที่ว่าง ‼️‼️ ---
-  function findEmptyLane() {
-    return lanes.findIndex(lane => lane === null); // คืนค่า index ของเลนที่ว่าง, หรือ -1 ถ้าเต็มหมด
   }
 
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับสร้างกระทง "พิเศษ" ของเรา ‼️ ---
