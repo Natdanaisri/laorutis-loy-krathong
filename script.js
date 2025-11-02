@@ -337,12 +337,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
     // --- ‼️‼️ ตรรกะใหม่: เปลี่ยนจากการดักฟังกระทงล่าสุด มาเป็นการสุ่มกระทงจาก Community ‼️‼️ ---
     // 1. ดึงข้อมูลกระทงทั้งหมดมาเก็บ ID ไว้ใน Array และเติมคลังสำหรับสุ่ม
     getDocs(krathongCollectionRef).then(snapshot => {
-      snapshot.forEach(doc => allKrathongIds.push(doc.id));
+      allKrathongIds = snapshot.docs.map(doc => doc.id);
       // เติมคลังกระทงสำหรับสุ่มในครั้งแรก
       refillCommunityPool();
       
       // 2. เริ่มแสดงกระทง Community ทันทีหลังจากได้ ID ทั้งหมด
-      showCommunityKrathongs();
+      if (allKrathongIds.length > 0) showCommunityKrathongs();
 
       // 3. ตั้ง Interval ให้สุ่มและแสดงกระทงใหม่ๆ ทุกๆ 15-25 วินาที (เพิ่มระยะห่าง)
       setInterval(showCommunityKrathongs, Math.random() * 10000 + 15000);
@@ -351,7 +351,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     // ฟังก์ชันสำหรับเติมคลังกระทงที่จะสุ่ม
     function refillCommunityPool() {
       console.log("Refilling community krathong pool...");
-      communityKrathongPool = [...allKrathongIds];
+      communityKrathongPool = [...allKrathongIds]; // สร้างสำเนาใหม่
     }
 
     async function showCommunityKrathongs() {
@@ -390,6 +390,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
         if (change.type === "added") {
           // ไม่ต้องสร้างกระทงซ้ำถ้าเป็นของตัวเอง (เพราะจะถูกจัดการโดยฟังก์ชัน saveAndFloatKrathong)
           const myKrathongId = localStorage.getItem('myKrathongId');
+          // --- ‼️‼️ แก้ไข: เพิ่ม ID ใหม่เข้าไปในคลังสุ่มทันที ‼️‼️ ---
+          const newId = change.doc.id;
+          if (!allKrathongIds.includes(newId)) {
+            allKrathongIds.push(newId);
+            communityKrathongPool.push(newId); // เพิ่มในคลังที่ใช้สุ่มด้วย
+          }
           if (change.doc.id !== myKrathongId) {
             createKrathongElement(change.doc.data());
           }
@@ -489,22 +495,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // ปรับความเร็ว: กระทงที่อยู่ใกล้ (ใหญ่) ควรจะเร็วขึ้น (ใช้เวลาน้อยลง)
       const animationDuration = 60 + ( (1 - perspectiveRatio) * 60 ); // ระยะเวลา 60-108 วินาที
       
-      // --- ‼️‼️ แก้ไข: ปรับ animation-delay ให้เป็นค่าบวกเสมอ ‼️‼️ ---
-      // เพื่อให้กระทงเริ่มต้นจากนอกจอเสมอ ไม่โผล่กลางคัน
+      // --- ‼️‼️ แก้ไข: สุ่มทิศทางและกำหนด animation-name ที่ถูกต้อง ‼️‼️ ---
+      // สุ่มทิศทาง (0 หรือ 1)
+      const direction = Math.random() < 0.5 ? 'floatAcross' : 'floatAcrossReverse';
+      const orientation = window.matchMedia("(orientation: portrait)").matches ? 'portrait' : 'desktop';
+      krathongWrapper.style.animationName = `${direction}-${orientation}`;
+
+      // สุ่มหน่วงเวลาเพื่อให้กระทงทยอยออกมา
       const delay = Math.random() * 5; // สุ่มหน่วงเวลา 0-5 วินาที
       
       krathongWrapper.style.animationDuration = `${animationDuration}s`;
       krathongWrapper.style.bottom = `${verticalPos}%`;
       krathongWrapper.style.animationDelay = `${delay}s`;
-      // --- ‼️‼️ แก้ไข: กำหนด z-index และ transform ตามมิติความลึก ‼️‼️ ---
-      // กระทงที่อยู่ใกล้ (laneIndex สูง) จะมี z-index สูงกว่า (อยู่ข้างบน)
       krathongWrapper.style.zIndex = 10 + laneIndex;
       krathongWrapper.style.transform = `scale(${scale})`;
       krathongWrapper.style.opacity = opacity;
-
-      // --- ‼️ แก้ไข: กำหนดให้กระทงลอยจากซ้ายไปขวาเสมอ ‼️ ---
-      const orientation = window.matchMedia("(orientation: portrait)").matches ? 'portrait' : 'desktop';
-      krathongWrapper.style.animationName = `floatAcross-${orientation}`;
       
       river.appendChild(krathongWrapper);
 
