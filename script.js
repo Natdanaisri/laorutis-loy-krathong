@@ -262,6 +262,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const adminEntryBtn = document.getElementById('admin-entry-btn');
   const adminLoginModal = document.getElementById('admin-login-modal');
   const adminLoginBtn = document.getElementById('admin-login-btn');
+  const toggleGridBtn = document.getElementById('toggle-grid-btn'); // ‼️ เพิ่ม: ปุ่ม Grid
 
   const musicControlBtn = document.getElementById('music-control-btn');
   const backgroundMusic = document.getElementById('background-music');
@@ -302,6 +303,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     // --- ถ้าไม่ใช่โหมด Kiosk ให้ทำงานตามปกติ ---
     // (โค้ดส่วนนี้จะทำงานเฉพาะใน index.html)
     listenForKrathongs();
+    // ‼️ เพิ่ม: สร้าง Grid Overlay สำหรับ Admin
+    createGridOverlay();
     updateTotalKrathongCount();
     // --- ‼️‼️ แก้ไข: คำนวณตำแหน่งของ "แถว" ใน Grid ‼️‼️ ---
     calculateGridRowPositions();
@@ -395,6 +398,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
   // --- ‼️‼️ ส่วนเพิ่มเติม: Event Listeners สำหรับ Admin ‼️‼️ ---
   if (adminEntryBtn) adminEntryBtn.addEventListener('click', () => adminLoginModal.style.display = 'block');
   if (adminLoginBtn) adminLoginBtn.addEventListener('click', handleAdminLogin);
+  if (toggleGridBtn) toggleGridBtn.addEventListener('click', () => {
+    document.getElementById('grid-overlay').style.display = (document.getElementById('grid-overlay').style.display === 'grid') ? 'none' : 'grid';
+  });
 
   // ทำให้กด Enter ในช่อง password แล้ว login ได้
   document.getElementById('admin-password').addEventListener('keyup', (e) => { if (e.key === 'Enter') handleAdminLogin(); });
@@ -851,6 +857,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
       errorMsg.style.display = 'none';
       showToast('เข้าสู่ระบบผู้ดูแลสำเร็จ!');
       // เปิดหน้าต่างรายชื่อในโหมด Admin ทันที
+      // ‼️ เพิ่ม: แสดงปุ่ม Grid เมื่อเป็น Admin
+      toggleGridBtn.style.display = 'block';
       fetchAllKrathongsAndShowList();
     } else {
       isAdmin = false;
@@ -859,6 +867,32 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   }
 
+  // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันสร้าง Grid Overlay สำหรับ Admin ‼️‼️ ---
+  function createGridOverlay() {
+    const river = document.getElementById('river');
+    const gridOverlay = document.getElementById('grid-overlay');
+    if (!river || !gridOverlay) return;
+
+    // สร้าง Cell ตามจำนวน Grid
+    for (let i = 0; i < GRID_COLUMNS * GRID_ROWS; i++) {
+      const cell = document.createElement('div');
+      cell.classList.add('grid-cell');
+
+      // --- ‼️‼️ เพิ่ม: สร้างตัวหนังสือบอกแกน ‼️‼️ ---
+      // CSS Grid จะเรียงจากซ้ายไปขวา, บนลงล่าง
+      const col = i % GRID_COLUMNS;
+      const row = Math.floor(i / GRID_COLUMNS);
+      
+      const label = document.createElement('span');
+      label.classList.add('grid-cell-label');
+      label.textContent = `C${col + 1}, R${row + 1}`; // C = Column, R = Row
+      cell.appendChild(label);
+      // --- สิ้นสุดการเพิ่ม ---
+
+      gridOverlay.appendChild(cell);
+    }
+    river.appendChild(gridOverlay); // ย้าย Overlay เข้าไปในแม่น้ำ
+  }
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับดึงข้อมูลทั้งหมดและแสดงใน Modal ‼️ ---
   async function fetchAllKrathongsAndShowList() {
     // 1. แสดง Modal และสถานะกำลังโหลด
