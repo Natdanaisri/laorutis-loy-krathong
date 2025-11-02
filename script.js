@@ -80,22 +80,19 @@ const FIREWORK_HUE_MAX = 360; // สีพลุ (Hue) สูงสุด
 // --- ‼️ ส่วนเพิ่มเติม: การจัดการการแสดงผลกระทง ‼️ ---
 const MAX_KRATHONGS_ON_SCREEN = 10; // กำหนดจำนวนกระทงสูงสุดที่จะแสดงบนหน้าจอ
 // --- ‼️ แก้ไข: แยกตัวแปรความสูงสำหรับจอแนวนอนและแนวตั้ง ‼️ ---
-const KRATHONG_VERTICAL_POS_MIN_DESKTOP = 20;  // ตำแหน่งต่ำสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
-const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 55; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
-const KRATHONG_VERTICAL_POS_MIN_MOBILE = 30; // ‼️ แก้ไข: ปรับตำแหน่งต่ำสุดสำหรับจอแนวตั้ง
-const KRATHONG_VERTICAL_POS_MAX_MOBILE = 75; // ‼️ แก้ไข: ปรับตำแหน่งสูงสุดสำหรับจอแนวตั้ง
+let KRATHONG_VERTICAL_POS_MIN_DESKTOP = 10;  // ‼️ แก้ไข: เปลี่ยนเป็น let เพื่อให้ Admin ปรับค่าได้
+let KRATHONG_VERTICAL_POS_MAX_DESKTOP = 40; // ‼️ แก้ไข: เปลี่ยนเป็น let
+let KRATHONG_VERTICAL_POS_MIN_MOBILE = 30; // ‼️ แก้ไข: เปลี่ยนเป็น let
+let KRATHONG_VERTICAL_POS_MAX_MOBILE = 75; // ‼️ แก้ไข: เปลี่ยนเป็น let
 
 const KRATHONG_ANIMATION_DURATION = 100; // ‼️‼️ เพิ่ม: กำหนดความเร็วคงที่สำหรับกระทงทุกลำ (หน่วยเป็นวินาที) ‼️‼️
-
-// --- ‼️‼️ ตรรกะใหม่: ระบบกริด (Grid System) ‼️‼️ ---
-const GRID_COLUMNS = 3; // จำนวนเลนในแนวนอน (ตามที่คุณต้องการ)
-const GRID_ROWS = 2;    // จำนวนช่องย่อยในแนวตั้งต่อ 1 เลน
-
-// สร้างโครงสร้างข้อมูลสำหรับ Grid: Array 2 มิติ ขนาด 3x2
-// แต่ละช่อง (cell) จะเก็บ krathongElement หรือ null (ถ้าว่าง)
-let grid = Array.from({ length: GRID_COLUMNS }, () => Array(GRID_ROWS).fill(null));
-let verticalSlotPositions = []; // Array สำหรับเก็บค่า bottom ของแต่ละแถว
-
+ 
+// --- ‼️‼️ ตรรกะใหม่: ระบบเลน (Lane System) ‼️‼️ ---
+const NUM_LANES = 3; // กำหนดจำนวนเลนแนวนอน 3 เลน
+// สร้างโครงสร้างข้อมูลสำหรับ Lanes: Array 1 มิติ
+// แต่ละช่องจะเก็บ krathongElement หรือ null (ถ้าว่าง)
+let lanes = Array(NUM_LANES).fill(null);
+let lanePositions = []; // Array สำหรับเก็บค่า bottom ของแต่ละเลน
 let displayedKrathongs = []; // Array สำหรับเก็บคิวของกระทงที่แสดงอยู่
 
 // --- ‼️‼️ ส่วนเพิ่มเติม: คลังสำหรับสุ่มกระทง Community ‼️‼️ ---
@@ -263,6 +260,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const adminLoginModal = document.getElementById('admin-login-modal');
   const adminLoginBtn = document.getElementById('admin-login-btn');
   const toggleGridBtn = document.getElementById('toggle-grid-btn'); // ‼️ เพิ่ม: ปุ่ม Grid
+  const adminControlsPanel = document.getElementById('admin-controls-panel'); // ‼️ เพิ่ม: แผงควบคุม
+
 
   const musicControlBtn = document.getElementById('music-control-btn');
   const backgroundMusic = document.getElementById('background-music');
@@ -302,12 +301,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
   } else {
     // --- ถ้าไม่ใช่โหมด Kiosk ให้ทำงานตามปกติ ---
     // (โค้ดส่วนนี้จะทำงานเฉพาะใน index.html)
+    // ‼️ เพิ่ม: โหลดการตั้งค่าของ Admin (ถ้ามี)
+    loadAdminSettings();
     listenForKrathongs();
     // ‼️ เพิ่ม: สร้าง Grid Overlay สำหรับ Admin
     createGridOverlay();
     updateTotalKrathongCount();
-    // --- ‼️‼️ แก้ไข: คำนวณตำแหน่งของ "แถว" ใน Grid ‼️‼️ ---
-    calculateGridRowPositions();
+    // --- ‼️‼️ แก้ไข: คำนวณตำแหน่งของ "เลน" (Lane) ‼️‼️ ---
+    calculateLanePositions();
     checkAndShowFindMyKrathongButton();
   }
 
@@ -399,7 +400,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
   if (adminEntryBtn) adminEntryBtn.addEventListener('click', () => adminLoginModal.style.display = 'block');
   if (adminLoginBtn) adminLoginBtn.addEventListener('click', handleAdminLogin);
   if (toggleGridBtn) toggleGridBtn.addEventListener('click', () => {
-    document.getElementById('grid-overlay').style.display = (document.getElementById('grid-overlay').style.display === 'grid') ? 'none' : 'grid';
+    const overlay = document.getElementById('grid-overlay');
+    overlay.style.display = (overlay.style.display === 'block') ? 'none' : 'block';
   });
 
   // ทำให้กด Enter ในช่อง password แล้ว login ได้
@@ -480,8 +482,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     });
   }
   
-  // --- ‼️‼️ ฟังก์ชันใหม่: คำนวณตำแหน่งของ "แถว" ใน Grid ‼️‼️ ---
-  function calculateGridRowPositions() {
+  // --- ‼️‼️ ฟังก์ชันใหม่: คำนวณตำแหน่งของ "เลน" (Lane) ‼️‼️ ---
+  function calculateLanePositions() {
     const isPortrait = window.matchMedia("(orientation: portrait)").matches;
     let verticalMin, verticalMax;
   
@@ -493,11 +495,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
       verticalMax = KRATHONG_VERTICAL_POS_MAX_DESKTOP;
     }
   
-    verticalSlotPositions = []; // ล้างค่าเก่า
-    // คำนวณตำแหน่งสำหรับแต่ละแถว (Row)
-    const step = (verticalMax - verticalMin) / (GRID_ROWS - 1);
-    for (let i = 0; i < GRID_ROWS; i++) {
-      verticalSlotPositions.push(verticalMin + (i * step));
+    lanePositions = []; // ล้างค่าเก่า
+    // คำนวณตำแหน่งสำหรับแต่ละเลน (Lane) จากล่างขึ้นบน
+    const step = (verticalMax - verticalMin) / (NUM_LANES > 1 ? NUM_LANES - 1 : 1);
+    for (let i = 0; i < NUM_LANES; i++) {
+      lanePositions.push(verticalMin + (i * step));
     }
   }
 
@@ -506,23 +508,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
       // --- ‼️‼️ แก้ไข: กำหนดจำนวนกระทงสูงสุดตามแนวของจอ ‼️‼️ ---
       const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-      const maxKrathongsForDevice = GRID_COLUMNS * GRID_ROWS; // จำนวนกระทงสูงสุดเท่ากับขนาดของ Grid
+      const maxKrathongsForDevice = NUM_LANES; // จำนวนกระทงสูงสุดเท่ากับจำนวนเลน
 
       // --- ‼️‼️ แก้ไข: ตรรกะการจัดการคิวการแสดงผล ‼️‼️ ---
       // 1. ตรวจสอบว่ามีกระทง (ที่ไม่ใช่กระทงพิเศษของเรา) เกินจำนวนหรือไม่
       const communityKrathongs = displayedKrathongs.filter(k => !k.classList.contains('my-krathong-highlight'));
 
       if (communityKrathongs.length >= maxKrathongsForDevice) {
-        // 2. ถ้าเกิน, ให้ลบกระทง "ของคนอื่น" ที่เก่าที่สุดออก
+        // 2. ถ้าเกิน, ให้ลบกระทง "ของคนอื่น" ที่เก่าที่สุดออก (โค้ดเดิมยังใช้ได้ แต่ตอนนี้ไม่จำเป็นแล้ว เพราะเราจะจัดการเมื่อ animation จบ)
         const oldestKrathong = displayedKrathongs.shift(); // ดึงตัวเก่าสุดออกจาก Array
         if (oldestKrathong) {
-            // --- ‼️‼️ แก้ไข: คืนช่องใน Grid ให้ว่าง ‼️‼️ ---
-            const oldCol = parseInt(oldestKrathong.dataset.col, 10);
-            const oldRow = parseInt(oldestKrathong.dataset.row, 10);
-            if (!isNaN(oldCol) && !isNaN(oldRow)) {
-              grid[oldCol][oldRow] = null;
-            }
-            oldestKrathong.remove();
+          // คืนเลนให้ว่าง
+          const oldLaneIndex = parseInt(oldestKrathong.dataset.lane, 10);
+          if (!isNaN(oldLaneIndex) && lanes[oldLaneIndex] === oldestKrathong) lanes[oldLaneIndex] = null;
+          oldestKrathong.remove();
         }
       }
 
@@ -578,25 +577,25 @@ document.addEventListener('DOMContentLoaded', (event) => {
         verticalMax = KRATHONG_VERTICAL_POS_MAX_DESKTOP;
       }
 
-      // --- ‼️‼️ ตรรกะใหม่: ใช้ระบบกริด (Grid System) ‼️‼️ ---
-      // 1. หาช่องที่ว่างในกริด
-      const cell = findEmptyGridCell();
-      if (!cell) return; // ถ้าไม่มีช่องว่างเลย ก็ไม่ต้องสร้างกระทง
+      // --- ‼️‼️ ตรรกะใหม่: ใช้ระบบเลน (Lane System) ‼️‼️ ---
+      // 1. หาเลนที่ว่าง
+      const laneIndex = findEmptyLane();
+      if (laneIndex === -1) return; // ถ้าไม่มีเลนว่างเลย ก็ไม่ต้องสร้างกระทง
 
-      const { col, row } = cell;
-      grid[col][row] = krathongWrapper; // จองช่องในกริด
-      krathongWrapper.dataset.col = col;
-      krathongWrapper.dataset.row = row;
+      lanes[laneIndex] = krathongWrapper; // จองเลน
+      krathongWrapper.dataset.lane = laneIndex;
 
-      // 2. คำนวณตำแหน่งแนวตั้งจาก "แถว" ของกริด
-      let verticalPos = verticalSlotPositions[row];
+      // 2. คำนวณตำแหน่งแนวตั้งจาก "เลน" ที่ได้
+      let verticalPos = lanePositions[laneIndex];
 
       // --- ‼️ ส่วนเพิ่มเติม: จำลองมิติความลึก (Perspective) ‼️ ---
-      // ใช้ "คอลัมน์" (เลน) ของกริดในการคำนวณ
-      const perspectiveRatio = (col + 1) / GRID_COLUMNS; // ค่าระหว่าง 0.33, 0.66, 1.0
-      const scale = 0.6 + (perspectiveRatio * 0.5); // ขนาดจะอยู่ระหว่าง 0.7 - 1.1 (ยังคงไว้เพื่อให้มีมิติ)
-      const animationDuration = KRATHONG_ANIMATION_DURATION; // ‼️‼️ แก้ไข: ใช้ความเร็วคงที่ ‼️‼️
-      
+      // ใช้ "เลน" ในการคำนวณขนาดและความเร็ว
+      // เลน 0 (ล่างสุด, ใกล้สุด) -> ใหญ่สุด, ช้าสุด
+      // เลน NUM_LANES - 1 (บนสุด, ไกลสุด) -> เล็กสุด, เร็วสุด
+      const perspectiveRatio = laneIndex / (NUM_LANES - 1); // ค่าระหว่าง 0 ถึง 1
+      const scale = 1.1 - (perspectiveRatio * 0.4); // ขนาดจะอยู่ระหว่าง 1.1 (ใกล้) ถึง 0.7 (ไกล)
+      const animationDuration = KRATHONG_ANIMATION_DURATION + (perspectiveRatio * 20); // ความเร็วระหว่าง 100s (ใกล้) ถึง 120s (ไกล)
+
       const direction = 'floatAcross';
       const orientation = isPortrait ? 'portrait' : 'desktop';
 
@@ -634,31 +633,22 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
       // อัปเดตคิวของกระทงที่แสดงผลอยู่
       displayedKrathongs.push(krathongWrapper);
+
+      // --- ‼️‼️ เพิ่มเติม: เมื่อ animation จบ ให้ลบ element และคืนเลนให้ว่าง ‼️‼️ ---
+      krathongWrapper.addEventListener('animationend', () => {
+        // คืนเลนให้ว่าง
+        lanes[laneIndex] = null;
+        // ลบ element ออกจาก DOM
+        krathongWrapper.remove();
+        // ลบออกจากคิวที่แสดงผล
+        const indexInQueue = displayedKrathongs.indexOf(krathongWrapper);
+        if (indexInQueue > -1) displayedKrathongs.splice(indexInQueue, 1);
+      }, { once: true }); // ให้ event listener ทำงานแค่ครั้งเดียว
   }
 
-  // --- ‼️‼️ ฟังก์ชันใหม่: หาช่องที่ว่างในกริด ‼️‼️ ---
-  function findEmptyGridCell() {
-    // หาคอลัมน์ (เลน) ที่มีช่องว่างมากที่สุดก่อน
-    let bestCol = -1;
-    let maxEmptySlots = -1;
-
-    for (let c = 0; c < GRID_COLUMNS; c++) {
-      const emptySlots = grid[c].filter(cell => cell === null).length;
-      if (emptySlots > maxEmptySlots) {
-        maxEmptySlots = emptySlots;
-        bestCol = c;
-      }
-    }
-
-    if (bestCol === -1) return null; // ไม่มีช่องว่างเลย
-
-    // หาแถวที่ว่างในคอลัมน์ที่ดีที่สุด
-    for (let r = 0; r < GRID_ROWS; r++) {
-      if (grid[bestCol][r] === null) {
-        return { col: bestCol, row: r }; // คืนค่าตำแหน่งช่องที่ว่าง
-      }
-    }
-    return null; // ไม่ควรจะเกิดขึ้นถ้า Logic ถูกต้อง
+  // --- ‼️‼️ ฟังก์ชันใหม่: หาเลนที่ว่าง ‼️‼️ ---
+  function findEmptyLane() {
+    return lanes.findIndex(lane => lane === null); // คืนค่า index ของเลนที่ว่าง, หรือ -1 ถ้าเต็มหมด
   }
 
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับสร้างกระทง "พิเศษ" ของเรา ‼️ ---
@@ -845,6 +835,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   }
 
+  // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันโหลดการตั้งค่าของ Admin จาก localStorage ‼️‼️ ---
+  function loadAdminSettings() {
+    KRATHONG_VERTICAL_POS_MIN_DESKTOP = parseFloat(localStorage.getItem('admin_min_desktop')) || KRATHONG_VERTICAL_POS_MIN_DESKTOP;
+    KRATHONG_VERTICAL_POS_MAX_DESKTOP = parseFloat(localStorage.getItem('admin_max_desktop')) || KRATHONG_VERTICAL_POS_MAX_DESKTOP;
+    KRATHONG_VERTICAL_POS_MIN_MOBILE = parseFloat(localStorage.getItem('admin_min_mobile')) || KRATHONG_VERTICAL_POS_MIN_MOBILE;
+    KRATHONG_VERTICAL_POS_MAX_MOBILE = parseFloat(localStorage.getItem('admin_max_mobile')) || KRATHONG_VERTICAL_POS_MAX_MOBILE;
+  }
+
+  // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับอัปเดตตำแหน่งเส้น Grid ‼️‼️ ---
+  function updateGridOverlayPositions() {
+    const laneLines = document.querySelectorAll('.grid-lane-line');
+    laneLines.forEach((line, index) => line.style.bottom = `${lanePositions[index]}%`);
+  }
+
   // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับจัดการการ Login ของ Admin ‼️‼️ ---
   function handleAdminLogin() {
     const passwordInput = document.getElementById('admin-password');
@@ -857,8 +861,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
       errorMsg.style.display = 'none';
       showToast('เข้าสู่ระบบผู้ดูแลสำเร็จ!');
       // เปิดหน้าต่างรายชื่อในโหมด Admin ทันที
-      // ‼️ เพิ่ม: แสดงปุ่ม Grid เมื่อเป็น Admin
+      // ‼️ เพิ่ม: แสดงปุ่มและแผงควบคุมต่างๆ ของ Admin
       toggleGridBtn.style.display = 'block';
+      document.getElementById('grid-overlay').style.display = 'block';
+      createAdminControls(); // สร้างแผงควบคุม
+      adminControlsPanel.style.display = 'block';
       fetchAllKrathongsAndShowList();
     } else {
       isAdmin = false;
@@ -873,26 +880,80 @@ document.addEventListener('DOMContentLoaded', (event) => {
     const gridOverlay = document.getElementById('grid-overlay');
     if (!river || !gridOverlay) return;
 
-    // สร้าง Cell ตามจำนวน Grid
-    for (let i = 0; i < GRID_COLUMNS * GRID_ROWS; i++) {
-      const cell = document.createElement('div');
-      cell.classList.add('grid-cell');
+    gridOverlay.innerHTML = ''; // ล้างเส้นเก่าออกก่อน
 
-      // --- ‼️‼️ เพิ่ม: สร้างตัวหนังสือบอกแกน ‼️‼️ ---
-      // CSS Grid จะเรียงจากซ้ายไปขวา, บนลงล่าง
-      const col = i % GRID_COLUMNS;
-      const row = Math.floor(i / GRID_COLUMNS);
-      
+    // สร้างเส้นประตามจำนวนเลน
+    for (let i = 0; i < NUM_LANES; i++) {
+      const laneLine = document.createElement('div');
+      laneLine.classList.add('grid-lane-line');
+      // ‼️ แก้ไข: ตำแหน่งแนวตั้งจะถูกกำหนดโดยฟังก์ชัน updateGridOverlayPositions
       const label = document.createElement('span');
       label.classList.add('grid-cell-label');
-      label.textContent = `C${col + 1}, R${row + 1}`; // C = Column, R = Row
-      cell.appendChild(label);
-      // --- สิ้นสุดการเพิ่ม ---
-
-      gridOverlay.appendChild(cell);
+      label.textContent = `Lane ${i + 1}`;
+      laneLine.appendChild(label);
+      gridOverlay.appendChild(laneLine);
     }
+    updateGridOverlayPositions(); // กำหนดตำแหน่งเริ่มต้น
     river.appendChild(gridOverlay); // ย้าย Overlay เข้าไปในแม่น้ำ
   }
+
+  // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันสร้างแผงควบคุมสำหรับ Admin ‼️‼️ ---
+  function createAdminControls() {
+    adminControlsPanel.innerHTML = ''; // ล้างของเก่า
+
+    const createSlider = (groupTitle, label, id, min, max, value, storageKey) => {
+      const container = document.createElement('div');
+      container.className = 'admin-slider-container';
+
+      const labelElem = document.createElement('label');
+      labelElem.htmlFor = id;
+      labelElem.textContent = label;
+
+      const slider = document.createElement('input');
+      slider.type = 'range';
+      slider.id = id;
+      slider.min = min;
+      slider.max = max;
+      slider.value = value;
+
+      const valueSpan = document.createElement('span');
+      valueSpan.textContent = `${value}%`;
+
+      slider.addEventListener('input', (e) => {
+        const newValue = parseFloat(e.target.value);
+        valueSpan.textContent = `${newValue}%`;
+        localStorage.setItem(storageKey, newValue);
+        // โหลดค่าใหม่และคำนวณตำแหน่งเลนอีกครั้ง
+        loadAdminSettings();
+        calculateLanePositions();
+        updateGridOverlayPositions(); // อัปเดตเส้น Grid ทันที
+      });
+
+      container.append(labelElem, slider, valueSpan);
+      return container;
+    };
+
+    // --- กลุ่ม Desktop ---
+    const desktopGroup = document.createElement('div');
+    desktopGroup.className = 'admin-control-group';
+    const desktopTitle = document.createElement('h4');
+    desktopTitle.textContent = 'Desktop Lanes Position';
+    desktopGroup.appendChild(desktopTitle);
+    desktopGroup.appendChild(createSlider('Desktop', 'ไกลสุด', 'slider-min-desktop', 0, 100, KRATHONG_VERTICAL_POS_MIN_DESKTOP, 'admin_min_desktop'));
+    desktopGroup.appendChild(createSlider('Desktop', 'ใกล้สุด', 'slider-max-desktop', 0, 100, KRATHONG_VERTICAL_POS_MAX_DESKTOP, 'admin_max_desktop'));
+
+    // --- กลุ่ม Mobile ---
+    const mobileGroup = document.createElement('div');
+    mobileGroup.className = 'admin-control-group';
+    const mobileTitle = document.createElement('h4');
+    mobileTitle.textContent = 'Mobile Lanes Position';
+    mobileGroup.appendChild(mobileTitle);
+    mobileGroup.appendChild(createSlider('Mobile', 'ไกลสุด', 'slider-min-mobile', 0, 100, KRATHONG_VERTICAL_POS_MIN_MOBILE, 'admin_min_mobile'));
+    mobileGroup.appendChild(createSlider('Mobile', 'ใกล้สุด', 'slider-max-mobile', 0, 100, KRATHONG_VERTICAL_POS_MAX_MOBILE, 'admin_max_mobile'));
+
+    adminControlsPanel.append(desktopGroup, mobileGroup);
+  }
+
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับดึงข้อมูลทั้งหมดและแสดงใน Modal ‼️ ---
   async function fetchAllKrathongsAndShowList() {
     // 1. แสดง Modal และสถานะกำลังโหลด
@@ -1110,8 +1171,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
     if (fireworksCanvas) {
       fireworksCanvas.width = window.innerWidth;
       fireworksCanvas.height = window.innerHeight * 0.25; // ให้ตรงกับความสูงที่กำหนดใน CSS
-      // --- ‼️‼️ ส่วนเพิ่มเติม: คำนวณตำแหน่งช่องลอยใหม่เมื่อปรับขนาดจอ ‼️‼️ ---
-      calculateGridRowPositions();
+      // --- ‼️‼️ ส่วนเพิ่มเติม: คำนวณตำแหน่งเลนใหม่เมื่อปรับขนาดจอ ‼️‼️ ---
+      calculateLanePositions();
+      if (isAdmin) updateGridOverlayPositions(); // ‼️ เพิ่ม: อัปเดตเส้น Grid ด้วย
     }
   }
 

@@ -178,22 +178,24 @@ body, html {
   position: absolute;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
-  grid-template-columns: repeat(3, 1fr); /* 3 เลน (คอลัมน์) */
-  grid-template-rows: repeat(2, 1fr);    /* 2 แถว */
-  gap: 5px;
+  width: 100%; /* ความกว้างเต็ม */
+  height: 50%; /* ครอบคลุมพื้นที่แม่น้ำ (ครึ่งล่างของจอ) */
+  bottom: 0;   /* ยึดกับขอบล่าง */
+  top: auto;   /* ล้างค่า top เดิม */
   pointer-events: none; /* ทำให้คลิกทะลุได้ */
   z-index: 1500; /* ให้อยู่เหนือทุกอย่างยกเว้น Modal */
-  box-sizing: border-box;
-  padding: 5px;
+  /* ‼️ แก้ไข: ลบ flexbox ออก เพื่อให้ควบคุมตำแหน่งเส้นจาก JS ได้โดยตรง */
 }
 
-.grid-cell {
-  position: relative; /* ‼️ เพิ่ม: เพื่อให้ label อยู่ในกรอบของ cell นี้ */
-  border: 2px dashed rgba(255, 0, 0, 0.7);
-  background-color: rgba(255, 0, 0, 0.05);
-  border-radius: 10px;
+.grid-lane-line {
+  position: absolute; /* ‼️ แก้ไข: เปลี่ยนเป็น absolute เพื่อให้กำหนดตำแหน่ง bottom ได้ */
+  width: 100%;
+  border-top: 2px dashed rgba(255, 0, 0, 0.7); /* สร้างเส้นประแนวนอน */
+  transition: bottom 0.2s ease-in-out; /* ‼️ เพิ่ม: ทำให้เส้นขยับอย่างนุ่มนวล */
+}
+
+.grid-cell-label {
+  /* สไตล์เดิมยังใช้ได้ดี */
 }
 
 /* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับตัวหนังสือบอกแกนใน Grid ‼️ --- */
@@ -746,4 +748,56 @@ textarea {
 .extra-btn:hover {
   background-color: rgba(255, 255, 255, 0.4);
   transform: scale(1.05);
+}
+
+/* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับแผงควบคุมของ Admin ‼️ --- */
+#admin-controls-panel {
+  position: fixed;
+  bottom: 15px;
+  left: 15px;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  color: white;
+  padding: 15px 20px;
+  border-radius: 12px;
+  z-index: 1002;
+  font-family: var(--body-font);
+  width: 300px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.admin-control-group {
+  margin-bottom: 12px;
+}
+
+.admin-control-group h4 {
+  margin: 0 0 10px 0;
+  font-size: 0.9em;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+  padding-bottom: 5px;
+}
+
+.admin-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 5px;
+}
+
+.admin-slider-container label {
+  font-size: 0.8em;
+  width: 40px; /* กำหนดความกว้างให้ label เท่ากัน */
+  flex-shrink: 0;
+}
+
+.admin-slider-container input[type="range"] {
+  flex-grow: 1;
+}
+
+.admin-slider-container span {
+  font-size: 0.8em;
+  font-weight: bold;
+  width: 35px; /* กำหนดความกว้างให้ตัวเลขเท่ากัน */
 }
