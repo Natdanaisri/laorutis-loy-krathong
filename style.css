@@ -164,7 +164,7 @@ body, html {
 @media (orientation: portrait) {
   .floating-krathong-wrapper {
     width: var(--krathong-size-mobile); /* ใช้ตัวแปรสำหรับขนาดแนวตั้ง */
-    animation-name: floatAcrossReverse-portrait;
+    /* animation-name ถูกกำหนดโดย JS แล้ว */
   }
 }
 /* =================================================================== */
@@ -662,11 +662,7 @@ textarea {
     top: 15px;
     right: 15px;
   }
-  /* ‼️ เพิ่มเติม: ย้ายปุ่มตามหากระทงมาไว้ด้านขวาสำหรับมือถือ ‼️ */
-  .extra-btn {
-    left: auto;
-    right: 60px; /* จัดตำแหน่งให้อยู่ข้างๆ ปุ่มควบคุมเพลง */
-  }
+  /* ‼️ ลบ: ไม่ย้ายปุ่มตามหากระทงในหน้าจอมือถือแล้ว ‼️ */
 }
 
 /* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับปุ่มพิเศษ (ตามหากระทง) ‼️ --- */
@@ -677,10 +673,12 @@ textarea {
   background-color: rgba(255, 255, 255, 0.2);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.5);
-  border-radius: 20px;
-  padding: 8px 15px;
+  /* --- ‼️ แก้ไข: ทำให้ปุ่มเล็กลงและเป็นวงกลม ‼️ --- */
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
   font-family: var(--body-font);
-  font-size: 0.9em;
+  font-size: 1.1em; /* ปรับขนาดไอคอนให้พอดี */
   cursor: pointer;
   backdrop-filter: blur(5px);
   z-index: 1001; /* อยู่เหนือปุ่มสร้างกระทง แต่ใต้ modal */
