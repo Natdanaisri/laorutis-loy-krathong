@@ -80,10 +80,10 @@ const FIREWORK_HUE_MAX = 360; // สีพลุ (Hue) สูงสุด
 // --- ‼️ ส่วนเพิ่มเติม: การจัดการการแสดงผลกระทง ‼️ ---
 const MAX_KRATHONGS_ON_SCREEN = 10; // กำหนดจำนวนกระทงสูงสุดที่จะแสดงบนหน้าจอ
 // --- ‼️ แก้ไข: แยกตัวแปรความสูงสำหรับจอแนวนอนและแนวตั้ง ‼️ ---
-const KRATHONG_VERTICAL_POS_MIN_DESKTOP = 10;  // ตำแหน่งต่ำสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
-const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 40; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
-const KRATHONG_VERTICAL_POS_MIN_MOBILE = 35; // ‼️ แก้ไข: ปรับตำแหน่งต่ำสุดสำหรับจอแนวตั้ง
-const KRATHONG_VERTICAL_POS_MAX_MOBILE = 70; // ‼️ แก้ไข: ปรับตำแหน่งสูงสุดสำหรับจอแนวตั้ง
+const KRATHONG_VERTICAL_POS_MIN_DESKTOP = 5;  // ตำแหน่งต่ำสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
+const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 45; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
+const KRATHONG_VERTICAL_POS_MIN_MOBILE = 30; // ‼️ แก้ไข: ปรับตำแหน่งต่ำสุดสำหรับจอแนวตั้ง
+const KRATHONG_VERTICAL_POS_MAX_MOBILE = 75; // ‼️ แก้ไข: ปรับตำแหน่งสูงสุดสำหรับจอแนวตั้ง
 
 // --- ‼️ ส่วนเพิ่มเติม: การจัดการเลนเพื่อป้องกันกระทงซ้อนกัน ‼️ ---
 const NUMBER_OF_LANES = 3; // แบ่งพื้นที่แสดงผลออกเป็น 3 เลน
@@ -98,6 +98,9 @@ let allKrathongIds = []; // เก็บ ID กระทงทั้งหมด
 let communityKrathongPool = []; // คลัง ID ที่ยังไม่ได้สุ่มแสดง
 
 let fireworks = []; // อาร์เรย์เก็บพลุที่กำลังทำงาน
+
+// --- ‼️‼️ ส่วนเพิ่มเติม: ป้องกันกระทงซ้อนกันตอนเริ่มต้น ‼️‼️ ---
+let globalLastKrathongStartTime = 0; // เก็บเวลาที่กระทงล่าสุด (จากทุกเลน) เริ่มลอย
 let particles = []; // อาร์เรย์เก็บอนุภาคที่กำลังทำงาน
 let lastFireworkTime = 0; // เวลาล่าสุดที่ยิงพลุ
 
@@ -469,7 +472,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
       // --- ‼️‼️ แก้ไข: กำหนดจำนวนกระทงสูงสุดตามแนวของจอ ‼️‼️ ---
       const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-      const maxKrathongsForDevice = isPortrait ? 5 : MAX_KRATHONGS_ON_SCREEN;
+      const maxKrathongsForDevice = MAX_KRATHONGS_ON_SCREEN; // ใช้ค่าสูงสุด 10 อันสำหรับทุกขนาดจอ
 
       // --- ‼️‼️ แก้ไข: ตรรกะการจัดการคิวการแสดงผล ‼️‼️ ---
       // 1. ตรวจสอบว่ามีกระทง (ที่ไม่ใช่กระทงพิเศษของเรา) เกินจำนวนหรือไม่
@@ -576,21 +579,20 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const direction = 'floatAcross';
       const orientation = isPortrait ? 'portrait' : 'desktop';
 
-      // --- ‼️‼️ แก้ไข: ตรรกะการหน่วงเวลาอัจฉริยะ ‼️‼️ ---
-      // --- ‼️‼️‼️ การปรับปรุง: เพิ่มการสุ่ม Delay เริ่มต้น (Staggered Start) ‼️‼️‼️ ---
-      // สุ่มเวลาหน่วงเพิ่มเติม 0 ถึง 4 วินาที เพื่อทำลายการเกาะกลุ่มในแนวตั้ง
-      let randomInitialDelay = Math.random() * 4;
-      let delay = randomInitialDelay;
-      const lastKrathongInLane = lanes[laneIndex].lastKrathong;
-      if (lastKrathongInLane) {
-        const timeSinceLast = Date.now() - lastKrathongInLane.startTime;
-        const requiredDelay = 5000; // ต้องการให้ห่างกันอย่างน้อย 5 วินาที
-        if (timeSinceLast < requiredDelay) {
-          // ถ้ากระทงล่าสุดเพิ่งถูกปล่อยไปไม่นาน ให้หน่วงเวลากระทงใหม่
-          delay = (requiredDelay - timeSinceLast) / 1000; // แปลงเป็นวินาที
-        }
+      // --- ‼️‼️ แก้ไข: ตรรกะการหน่วงเวลาอัจฉริยะ (Global Delay) ‼️‼️ ---
+      // ตรวจสอบเวลาจากกระทงล่าสุดที่ถูกปล่อย "จากทุกเลน" เพื่อป้องกันการซ้อนกัน
+      const now = Date.now();
+      const timeSinceLastGlobal = now - globalLastKrathongStartTime;
+      const requiredDelayMs = 4000; // ‼️ กำหนดให้กระทงแต่ละอันห่างกันอย่างน้อย 4 วินาที
+      let delay = 0; // ค่าหน่วงเวลา (หน่วยเป็นวินาที)
+
+      if (timeSinceLastGlobal < requiredDelayMs) {
+        // ถ้ากระทงล่าสุดเพิ่งถูกปล่อยไปไม่นาน ให้หน่วงเวลากระทงใหม่
+        delay = (requiredDelayMs - timeSinceLastGlobal) / 1000;
       }
-      
+      // อัปเดตเวลาล่าสุดของกระทงที่ถูกปล่อย (รวมเวลาหน่วง)
+      globalLastKrathongStartTime = now + (delay * 1000);
+
       krathongWrapper.style.animationDuration = `${animationDuration}s`;
       krathongWrapper.style.bottom = `${verticalPos}%`;
       krathongWrapper.style.animationDelay = `${delay}s`;
@@ -609,12 +611,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       
       river.appendChild(krathongWrapper);
 
-      // --- ‼️‼️ แก้ไข: อัปเดตข้อมูลในเลนและคิว ‼️‼️ ---
-      const newKrathongInfo = {
-        element: krathongWrapper,
-        startTime: Date.now() + (delay * 1000) // เวลาที่เริ่มแสดงผลจริง (รวม delay)
-      };
-      lanes[laneIndex].lastKrathong = newKrathongInfo;
+      // อัปเดตคิวของกระทงที่แสดงผลอยู่
       displayedKrathongs.push(krathongWrapper);
   }
 
