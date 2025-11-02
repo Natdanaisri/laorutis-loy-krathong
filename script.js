@@ -80,10 +80,12 @@ const FIREWORK_HUE_MAX = 360; // สีพลุ (Hue) สูงสุด
 // --- ‼️ ส่วนเพิ่มเติม: การจัดการการแสดงผลกระทง ‼️ ---
 const MAX_KRATHONGS_ON_SCREEN = 10; // กำหนดจำนวนกระทงสูงสุดที่จะแสดงบนหน้าจอ
 // --- ‼️ แก้ไข: แยกตัวแปรความสูงสำหรับจอแนวนอนและแนวตั้ง ‼️ ---
-const KRATHONG_VERTICAL_POS_MIN_DESKTOP = 5;  // ตำแหน่งต่ำสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
-const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 45; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
+const KRATHONG_VERTICAL_POS_MIN_DESKTOP = 20;  // ตำแหน่งต่ำสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
+const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 55; // ตำแหน่งสูงสุด (แนวนอน, หน่วยเป็น %, จากด้านล่าง)
 const KRATHONG_VERTICAL_POS_MIN_MOBILE = 30; // ‼️ แก้ไข: ปรับตำแหน่งต่ำสุดสำหรับจอแนวตั้ง
 const KRATHONG_VERTICAL_POS_MAX_MOBILE = 75; // ‼️ แก้ไข: ปรับตำแหน่งสูงสุดสำหรับจอแนวตั้ง
+
+const KRATHONG_ANIMATION_DURATION = 100; // ‼️‼️ เพิ่ม: กำหนดความเร็วคงที่สำหรับกระทงทุกลำ (หน่วยเป็นวินาที) ‼️‼️
 
 // --- ‼️‼️ ตรรกะใหม่: ระบบกริด (Grid System) ‼️‼️ ---
 const GRID_COLUMNS = 3; // จำนวนเลนในแนวนอน (ตามที่คุณต้องการ)
@@ -586,11 +588,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // --- ‼️ ส่วนเพิ่มเติม: จำลองมิติความลึก (Perspective) ‼️ ---
       // ใช้ "คอลัมน์" (เลน) ของกริดในการคำนวณ
       const perspectiveRatio = (col + 1) / GRID_COLUMNS; // ค่าระหว่าง 0.33, 0.66, 1.0
-      const scale = 0.6 + (perspectiveRatio * 0.5); // ขนาดจะอยู่ระหว่าง 0.7 - 1.1
-      const baseDuration = 80; // ระยะเวลาพื้นฐาน
-      const perspectiveEffect = (1 - perspectiveRatio) * 60; // ผลจากมิติ (0-48s)
-      const randomVariation = (Math.random() - 0.5) * 20; // สุ่ม +/- 10s
-      const animationDuration = baseDuration + perspectiveEffect + randomVariation;
+      const scale = 0.6 + (perspectiveRatio * 0.5); // ขนาดจะอยู่ระหว่าง 0.7 - 1.1 (ยังคงไว้เพื่อให้มีมิติ)
+      const animationDuration = KRATHONG_ANIMATION_DURATION; // ‼️‼️ แก้ไข: ใช้ความเร็วคงที่ ‼️‼️
       
       const direction = 'floatAcross';
       const orientation = isPortrait ? 'portrait' : 'desktop';
