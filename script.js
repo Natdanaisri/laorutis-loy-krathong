@@ -868,7 +868,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
           tableHeader.appendChild(adminHeader);
         }
         // ถ้าไม่เป็น Admin ให้ซ่อนปุ่มโหมดพิเศษ (ถ้ามี)
-        document.getElementById('special-mode-toggle-btn')?.remove();
+      } else {
+        document.getElementById('special-mode-toggle-btn')?.remove(); // ย้ายมาไว้ใน else
       }
 
       let sequenceNumber = 1; // ตัวแปรสำหรับนับลำดับ
