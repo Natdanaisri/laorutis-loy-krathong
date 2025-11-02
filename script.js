@@ -494,10 +494,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // Create a wrapper div for the krathong image and text
       const krathongWrapper = document.createElement('div');
       krathongWrapper.classList.add('floating-krathong-wrapper');
-      // --- ‼️‼️ แก้ไข: ซ่อนกระทงไว้นอกจอก่อน เพื่อป้องกันการกระพริบที่มุมซ้าย ‼️‼️ ---
-      // กำหนดตำแหน่งเริ่มต้นให้อยู่นอกจอไปไกลๆ ก่อนที่จะเริ่มแอนิเมชัน
-      krathongWrapper.style.left = '-9999px';
-      krathongWrapper.style.bottom = '0';
       
       // --- แก้ไข: ดึงรูปภาพกระทงที่ถูกต้อง ---
       // kData.krathongType จะเป็น 'krathong_1', 'krathong_2' เป็นต้น
@@ -601,15 +597,19 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // เราจะใช้ค่า 100 ลบด้วยตำแหน่งแนวตั้ง เพื่อให้กระทงที่อยู่ด้านล่างสุด (เช่น bottom: 5%) มี z-index สูงสุด (z-index: 95)
       krathongWrapper.style.zIndex = Math.floor(100 - verticalPos);
       krathongWrapper.style.transform = `scale(${scale})`;
-      // --- ‼️‼️ แก้ไข: กำหนด animation-name และล้างค่า left ที่ซ่อนไว้ออก ‼️‼️ ---
+      // --- ‼️‼️ แก้ไข: ย้ายการซ่อนกระทงมาไว้ที่นี่ และใช้ rAF เพื่อเริ่มแอนิเมชัน ‼️‼️ ---
+      // 1. ซ่อนกระทงไว้นอกจอก่อนที่จะเพิ่มเข้าไปใน DOM
+      krathongWrapper.style.left = '-9999px';
+      krathongWrapper.style.bottom = '0px';
+
+      river.appendChild(krathongWrapper);
+
       // ใช้ requestAnimationFrame เพื่อให้แน่ใจว่าเบราว์เซอร์ได้ประมวลผลสไตล์เริ่มต้น (ที่ซ่อนไว้) ก่อน
       // จากนั้นจึงกำหนดแอนิเมชันและตำแหน่งที่ถูกต้อง
       requestAnimationFrame(() => {
-        krathongWrapper.style.left = ''; // ล้างค่า left ที่ซ่อนไว้ออก
+        krathongWrapper.style.left = ''; // 2. ล้างค่า left ที่ซ่อนไว้ออก
         krathongWrapper.style.animationName = `${direction}-${orientation}`;
       });
-      
-      river.appendChild(krathongWrapper);
 
       // อัปเดตคิวของกระทงที่แสดงผลอยู่
       displayedKrathongs.push(krathongWrapper);
