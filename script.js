@@ -254,7 +254,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const adminEntryBtn = document.getElementById('admin-entry-btn');
   const adminLoginModal = document.getElementById('admin-login-modal');
   const adminLoginBtn = document.getElementById('admin-login-btn');
-  const exitSpecialModeBtn = document.getElementById('exit-special-mode-btn'); // ‼️ เพิ่ม: ปุ่มออกจากโหมดพิเศษ
 
   const musicControlBtn = document.getElementById('music-control-btn');
   const backgroundMusic = document.getElementById('background-music');
@@ -267,6 +266,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const dotsContainer = document.getElementById('krathong-dots-container');
   let currentKrathongIndex = 0;
 
+  // --- ‼️‼️ ส่วนเพิ่มเติม: ตรวจสอบว่าอยู่ในโหมด Kiosk หรือไม่ ‼️‼️ ---
+  const isKioskMode = document.body.classList.contains('kiosk-mode');
+
+  // --- ถ้าไม่ใช่โหมด Kiosk ให้ทำงานตามปกติ ---
+  if (!isKioskMode) {
+
   // --- แก้ไข: สร้างภาพตัวอย่าง (thumbnails) สำหรับนำทาง ---
   KRATHONG_IMAGES.forEach((src, index) => {
     const thumb = document.createElement('img'); // เปลี่ยนจาก div เป็น img
@@ -276,6 +281,23 @@ document.addEventListener('DOMContentLoaded', (event) => {
     thumb.addEventListener('click', () => showKrathong(index));
     dotsContainer.appendChild(thumb);
   });
+
+  // --- Event Listeners สำหรับปุ่มลูกศร ---
+  // (เฉพาะหน้าที่ไม่ใช่ Kiosk เพราะใน Kiosk มีปุ่มนี้อยู่แล้ว)
+  if (prevBtn && nextBtn) {
+    prevBtn.addEventListener('click', () => showKrathong(currentKrathongIndex - 1));
+    nextBtn.addEventListener('click', () => showKrathong(currentKrathongIndex + 1));
+  }
+
+  } else {
+    // --- ถ้าเป็นโหมด Kiosk ---
+    // ไม่ต้องสร้างปุ่มควบคุมเพลง, ปุ่ม admin, ปุ่มตามหากระทง ฯลฯ
+    // ซ่อน element ที่ไม่ต้องการให้แสดงในโหมด Kiosk
+    ['music-control-btn', 'find-my-krathong-btn', 'admin-entry-btn', 'create-krathong-btn', 'krathong-counter'].forEach(id => {
+        const elem = document.getElementById(id);
+        if (elem) elem.style.display = 'none';
+    });
+  }
 
   const thumbnails = document.querySelectorAll('.krathong-thumbnail'); // เลือก element ด้วย class ใหม่
 
@@ -304,21 +326,33 @@ document.addEventListener('DOMContentLoaded', (event) => {
   }
 
   // --- Initial Load & Real-time Listener ---
-  listenForKrathongs();
+  // --- ‼️‼️ แก้ไข: สร้าง thumbnails สำหรับ Kiosk mode ด้วย ‼️‼️ ---
+  if (isKioskMode) {
+    KRATHONG_IMAGES.forEach((src, index) => {
+      const thumb = document.createElement('img');
+      thumb.src = src;
+      thumb.classList.add('krathong-thumbnail');
+      thumb.dataset.index = index;
+      thumb.addEventListener('click', () => showKrathong(index));
+      dotsContainer.appendChild(thumb);
+    });
+  }
+
+  // --- ‼️‼️ แก้ไข: ถ้าไม่ใช่โหมด Kiosk ให้เริ่มฟังและแสดงกระทง ‼️‼️ ---
+  if (!isKioskMode) {
+    listenForKrathongs();
+    updateTotalKrathongCount();
+    checkAndShowFindMyKrathongButton();
+  }
+
   showKrathong(0); // แสดงกระทงแรกเมื่อโหลด
-
-  // --- ‼️ ส่วนเพิ่มเติม: ดึงจำนวนกระทงทั้งหมดเมื่อโหลดหน้า ‼️ ---
-  updateTotalKrathongCount();
-  
-  // --- ‼️ ส่วนเพิ่มเติม: ตรวจสอบและแสดงปุ่ม "ตามหากระทง" เมื่อโหลดหน้า ‼️ ---
-  checkAndShowFindMyKrathongButton();
-
-  // --- ‼️ ส่วนเพิ่มเติม: ตรวจสอบและเปิดใช้งานโหมดพิเศษเมื่อโหลดหน้า ‼️ ---
-  initializeSpecialMode();
 
 
   // --- Event Listeners ---
-  createBtn.addEventListener('click', () => createModal.style.display = 'block');
+  // --- ‼️‼️ แก้ไข: ตรวจสอบก่อนเพิ่ม Event Listener ‼️‼️ ---
+  if (createBtn) {
+    createBtn.addEventListener('click', () => createModal.style.display = 'block');
+  }
   
   closeBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
@@ -327,31 +361,47 @@ document.addEventListener('DOMContentLoaded', (event) => {
   });
 
   // Event Listeners สำหรับปุ่มลูกศร
-  prevBtn.addEventListener('click', () => showKrathong(currentKrathongIndex - 1));
-  nextBtn.addEventListener('click', () => showKrathong(currentKrathongIndex + 1));
+  if (prevBtn && nextBtn) {
+    prevBtn.addEventListener('click', () => showKrathong(currentKrathongIndex - 1));
+    nextBtn.addEventListener('click', () => showKrathong(currentKrathongIndex + 1));
+  }
 
-  submitBtn.addEventListener('click', () => {
-    const data = handleFormSubmit();
-    if (data) {
-      currentKrathongData = data; // เก็บข้อมูลที่ได้จากฟอร์มไว้ชั่วคราว
-    }
-  });
-  floatBtn.addEventListener('click', () => saveAndFloatKrathong(currentKrathongData));
+  // --- ‼️‼️ แก้ไข: แยก Logic การกดปุ่ม Submit/Float ‼️‼️ ---
+  if (isKioskMode) {
+    // ในโหมด Kiosk, ปุ่ม "ปล่อยกระทง" จะทำงานทั้งหมดในขั้นตอนเดียว
+    floatBtn.addEventListener('click', () => {
+      const data = handleFormSubmit(true); // true = isKiosk
+      if (data) {
+        saveAndFloatKrathong(data);
+      }
+    });
+  } else {
+    // โหมดปกติ, ทำงาน 2 ขั้นตอนเหมือนเดิม
+    submitBtn.addEventListener('click', () => {
+      const data = handleFormSubmit(false); // false = not Kiosk
+      if (data) {
+        currentKrathongData = data; // เก็บข้อมูลที่ได้จากฟอร์มไว้ชั่วคราว
+      }
+    });
+    floatBtn.addEventListener('click', () => saveAndFloatKrathong(currentKrathongData));
+  }
   
   // --- เพิ่มเติม: Event Listener สำหรับปุ่มควบคุมเพลง ---
-  musicControlBtn.addEventListener('click', toggleMusic);
+  if (musicControlBtn) {
+    musicControlBtn.addEventListener('click', toggleMusic);
+  }
 
   // --- ‼️ ส่วนเพิ่มเติม: Event Listener สำหรับปุ่มตามหากระทง ‼️ ---
-  findMyKrathongBtn.addEventListener('click', findAndHighlightMyKrathong);
+  if (findMyKrathongBtn) {
+    findMyKrathongBtn.addEventListener('click', findAndHighlightMyKrathong);
+  }
 
   // --- ‼️ ส่วนเพิ่มเติม: Event Listener สำหรับปุ่มดูรายชื่อทั้งหมด ‼️ ---
-  viewAllBtn.addEventListener('click', fetchAllKrathongsAndShowList);
+  if (viewAllBtn) viewAllBtn.addEventListener('click', fetchAllKrathongsAndShowList);
 
   // --- ‼️‼️ ส่วนเพิ่มเติม: Event Listeners สำหรับ Admin ‼️‼️ ---
-  adminEntryBtn.addEventListener('click', () => adminLoginModal.style.display = 'block');
-  adminLoginBtn.addEventListener('click', handleAdminLogin);
-  // --- ‼️‼️ ส่วนเพิ่มเติม: Event Listener สำหรับออกจากโหมดพิเศษ ‼️‼️ ---
-  exitSpecialModeBtn.addEventListener('click', exitSpecialMode);
+  if (adminEntryBtn) adminEntryBtn.addEventListener('click', () => adminLoginModal.style.display = 'block');
+  if (adminLoginBtn) adminLoginBtn.addEventListener('click', handleAdminLogin);
 
   // ทำให้กด Enter ในช่อง password แล้ว login ได้
   document.getElementById('admin-password').addEventListener('keyup', (e) => { if (e.key === 'Enter') handleAdminLogin(); });
@@ -608,7 +658,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   }
 
-  function handleFormSubmit() {
+  function handleFormSubmit(isKiosk = false) {
     const name = document.getElementById('user-name').value.trim();
     const wish = document.getElementById('user-wish').value.trim();
 
@@ -621,13 +671,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
       return null;
     }
 
-    // Update and show preview modal
-    document.getElementById('preview-krathong-img').src = selectedKrathongType.src;
-    document.getElementById('preview-wish-text').textContent = `"${wish}"`;
-    document.getElementById('preview-name-text').textContent = `- ${name} -`;
-
-    createModal.style.display = 'none';
-    previewModal.style.display = 'block';
+    // ถ้าไม่ใช่โหมด Kiosk ให้แสดงหน้า Preview ก่อน
+    if (!isKiosk) {
+      document.getElementById('preview-krathong-img').src = selectedKrathongType.src;
+      document.getElementById('preview-wish-text').textContent = `"${wish}"`;
+      document.getElementById('preview-name-text').textContent = `- ${name} -`;
+      createModal.style.display = 'none';
+      previewModal.style.display = 'block';
+    }
 
     // Return data object
     return {
@@ -642,42 +693,81 @@ document.addEventListener('DOMContentLoaded', (event) => {
     floatBtn.disabled = true;
     floatBtn.textContent = 'กำลังปล่อย...';
 
-    // ซ่อน Modal และแสดง Toast ทันทีเพื่อให้ผู้ใช้รู้สึกว่าระบบตอบสนอง
-    previewModal.style.display = 'none';
-    showToast();
+    if (!isKioskMode) {
+      // ซ่อน Modal และแสดง Toast ทันทีเพื่อให้ผู้ใช้รู้สึกว่าระบบตอบสนอง
+      previewModal.style.display = 'none';
+      showToast();
+    }
     
     try {
       // บันทึกข้อมูลลง Firestore ด้วยฟังก์ชัน addDoc
       const docRef = await addDoc(krathongCollectionRef, dataToSave);
       
-      // --- ‼️ ส่วนเพิ่มเติม: บันทึก ID กระทงและแสดงปุ่ม ‼️ ---
-      // 1. บันทึก ID ของกระทงที่เพิ่งสร้างลงใน localStorage
-      localStorage.setItem('myKrathongId', docRef.id);
-      // 2. แสดงปุ่ม "ตามหากระทงของฉัน"
-      findAndHighlightMyKrathong(); // ‼️‼️ เรียกฟังก์ชันเพื่อแสดงกระทงของตัวเองทันที ‼️‼️
-
-      findMyKrathongBtn.style.display = 'block';
-
-      // --- ‼️ ส่วนเพิ่มเติม: อัปเดตจำนวนกระทงบนหน้าจอทันที ‼️ ---
-      updateTotalKrathongCount();
-
-      // Reset form
-      document.getElementById('user-name').value = '';
-      document.getElementById('user-wish').value = '';
-      // ไม่ต้อง reset selectedKrathongType ที่นี่ เพราะจะถูกตั้งค่าใหม่เมื่อผู้ใช้เลือก
-      // showKrathong(0); // กลับไปที่กระทงแรก
+      if (isKioskMode) {
+        // --- ‼️‼️ Logic สำหรับ Kiosk Mode ‼️‼️ ---
+        showKioskThankYou(dataToSave);
+      } else {
+        // --- Logic สำหรับโหมดปกติ ---
+        // 1. บันทึก ID ของกระทงที่เพิ่งสร้างลงใน localStorage
+        localStorage.setItem('myKrathongId', docRef.id);
+        // 2. แสดงปุ่ม "ตามหากระทงของฉัน"
+        findAndHighlightMyKrathong(); // แสดงกระทงของตัวเองทันที
+        findMyKrathongBtn.style.display = 'block';
+        // 3. อัปเดตจำนวนกระทงบนหน้าจอทันที
+        updateTotalKrathongCount();
+        // 4. Reset form
+        document.getElementById('user-name').value = '';
+        document.getElementById('user-wish').value = '';
+      }
 
     } catch (error) {
       console.error("Error adding document: ", error);
       alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+      // คืนสถานะปุ่มหากเกิดข้อผิดพลาด
+      floatBtn.disabled = false;
+      floatBtn.textContent = isKioskMode ? 'ปล่อยกระทง' : 'ปล่อยกระทงลงน้ำ';
     }
     
-    floatBtn.disabled = false;
-    floatBtn.textContent = 'ปล่อยกระทงลงน้ำ';
+    // ไม่ต้องคืนสถานะปุ่มในโหมด Kiosk เพราะหน้าจะรีเฟรช
+    if (!isKioskMode) {
+      floatBtn.disabled = false;
+      floatBtn.textContent = 'ปล่อยกระทงลงน้ำ';
+    }
+  }
+
+  // --- ‼️‼️ ฟังก์ชันใหม่: แสดงหน้าขอบคุณในโหมด Kiosk และเริ่มนับถอยหลัง ‼️‼️ ---
+  function showKioskThankYou(savedData) {
+    const formWrapper = document.getElementById('kiosk-form-wrapper');
+    const thankYouWrapper = document.getElementById('kiosk-thank-you-wrapper');
+    const countdownTimer = document.getElementById('countdown-timer');
+
+    // 1. แสดงข้อมูลที่เพิ่งบันทึกในหน้าขอบคุณ
+    document.getElementById('preview-krathong-img').src = selectedKrathongType.src;
+    document.getElementById('preview-wish-text').textContent = `"${savedData.wish}"`;
+    document.getElementById('preview-name-text').textContent = `- ${savedData.name} -`;
+
+    // 2. สลับการแสดงผลจากฟอร์มเป็นหน้าขอบคุณ
+    formWrapper.style.display = 'none';
+    thankYouWrapper.style.display = 'block';
+
+    // 3. เริ่มนับถอยหลัง
+    let secondsLeft = 10;
+    countdownTimer.textContent = secondsLeft;
+
+    const interval = setInterval(() => {
+      secondsLeft--;
+      countdownTimer.textContent = secondsLeft;
+      if (secondsLeft <= 0) {
+        clearInterval(interval);
+        // 4. รีโหลดหน้าเพื่อกลับสู่สถานะเริ่มต้น
+        window.location.reload();
+      }
+    }, 1000);
   }
   
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับดึงและอัปเดตจำนวนกระทงทั้งหมด ‼️ ---
   async function updateTotalKrathongCount() {
+    if (!counterNumberElem) return; // ถ้าไม่มี element นี้ ก็ไม่ต้องทำ
     try {
       // ใช้ getCountFromServer เพื่อนับจำนวนเอกสารทั้งหมดใน collection
       const snapshot = await getCountFromServer(krathongCollectionRef);
@@ -751,72 +841,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   }
 
-  // --- ‼️‼️ ยกเครื่องใหม่: ฟังก์ชันสำหรับจัดการโหมดพิเศษ (จอสัมผัส) ‼️‼️ ---
-  function initializeSpecialMode() {
-    if (localStorage.getItem('specialModeActive') === 'true') {
-      document.body.classList.add('special-touch-mode');
-      createSpecialModeUI();
-    }
-  }
-
-  function toggleSpecialMode() {
-    const isActive = document.body.classList.toggle('special-touch-mode');
-    if (isActive) {
-      // --- เมื่อเปิดใช้งานโหมดพิเศษ ---
-      localStorage.setItem('specialModeActive', 'true');
-      showToast('เปิดใช้งานโหมดจอสัมผัส');
-      createSpecialModeUI(); // สร้าง UI ของโหมดพิเศษ
-      listModal.style.display = 'none'; // ปิดหน้าต่าง Admin
-    } else {
-      // --- เมื่อปิดใช้งานโหมดพิเศษ (ผ่านรหัสผ่าน) ---
-      localStorage.removeItem('specialModeActive');
-      showToast('ปิดใช้งานโหมดจอสัมผัส');
-      removeSpecialModeUI(); // ลบ UI ของโหมดพิเศษ
-    }
-  }
-
-  // ฟังก์ชันสำหรับสร้างปุ่มในโหมดพิเศษ
-  function createSpecialModeUI() {
-    // ตรวจสอบว่ามี container อยู่แล้วหรือยัง
-    if (document.getElementById('special-mode-ui-container')) return;
-
-    const container = document.createElement('div');
-    container.id = 'special-mode-ui-container';
-
-    // 1. สร้างปุ่ม "ร่วมลอยกระทง"
-    const createBtnClone = createBtn.cloneNode(true); // โคลนปุ่มเดิม
-    createBtnClone.id = 'special-mode-create-btn';
-    createBtnClone.className = 'special-mode-button'; // ใช้ class ใหม่
-    createBtnClone.style.animation = 'pulse-glow 3s infinite ease-in-out';
-    createBtnClone.addEventListener('click', () => createModal.style.display = 'block');
-
-    // 2. สร้างปุ่ม "ดูคำอวยพรทั้งหมด"
-    const viewAllBtnClone = viewAllBtn.cloneNode(true);
-    viewAllBtnClone.id = 'special-mode-view-all-btn';
-    viewAllBtnClone.className = 'special-mode-button';
-    viewAllBtnClone.textContent = 'ดูคำอวยพรทั้งหมด'; // เปลี่ยนข้อความให้ชัดเจน
-    viewAllBtnClone.addEventListener('click', fetchAllKrathongsAndShowList);
-
-    container.append(createBtnClone, viewAllBtnClone);
-    document.body.appendChild(container);
-  }
-
-  // ฟังก์ชันสำหรับลบ UI ของโหมดพิเศษ
-  function removeSpecialModeUI() {
-    document.getElementById('special-mode-ui-container')?.remove();
-  }
-
-  // ฟังก์ชันสำหรับออกจากโหมดพิเศษ (ต้องใช้รหัสผ่าน)
-  function exitSpecialMode() {
-    const password = prompt("กรุณาใส่รหัสผ่านผู้ดูแลเพื่อออกจากโหมดพิเศษ:");
-    if (password === ADMIN_PASSWORD) {
-      toggleSpecialMode(); // เรียกใช้ฟังก์ชันเดิมเพื่อสลับสถานะและลบ UI
-    } else if (password !== null) { // ถ้าผู้ใช้กด OK แต่รหัสผิด
-      alert("รหัสผ่านไม่ถูกต้อง!");
-    }
-  }
-
-
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับดึงข้อมูลทั้งหมดและแสดงใน Modal ‼️ ---
   async function fetchAllKrathongsAndShowList() {
     // 1. แสดง Modal และสถานะกำลังโหลด
@@ -843,19 +867,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const listContent = document.querySelector('#list-modal .list-content');
       const tableHeader = document.querySelector('#wish-list-table thead tr');
 
-      // ‼️‼️ แก้ไข: ถ้าอยู่ในโหมดพิเศษ ปุ่ม "ดูทั้งหมด" จะไม่แสดงปุ่ม toggle อีก
-      if (document.body.classList.contains('special-touch-mode')) {
-        // ไม่ต้องทำอะไร ปล่อยให้ตารางแสดงผลตามปกติ
-      }
-      // ถ้าไม่ได้อยู่ในโหมดพิเศษ ให้แสดงปุ่ม toggle ตามปกติ
-      else if (isAdmin) {
+      if (isAdmin) {
         // เพิ่มปุ่มเปิด/ปิดโหมดพิเศษ (หากยังไม่มี)
         if (!document.getElementById('special-mode-toggle-btn')) {
           const specialModeBtn = document.createElement('button');
           specialModeBtn.id = 'special-mode-toggle-btn';
-          specialModeBtn.textContent = '🖥️ เปิด/ปิด โหมดจอสัมผัส';
+          specialModeBtn.textContent = '🖥️ เปิดโหมดจอสัมผัส';
           specialModeBtn.style.cssText = 'background-color: #ff9800; color: white; padding: 10px 20px; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; margin-bottom: 20px;';
-          specialModeBtn.onclick = toggleSpecialMode;
+          specialModeBtn.onclick = () => window.open('kiosk.html', '_blank');
           // ใส่ปุ่มไว้บนสุดของ modal content
           listContent.insertBefore(specialModeBtn, listContent.firstChild);
         }
@@ -1043,12 +1062,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
   }
 
   // --- Initialize Fireworks (เริ่มต้นพลุ) ---
-  if (FIREWORKS_ENABLED) {
+  // --- ‼️‼️ แก้ไข: ไม่ต้องแสดงพลุในโหมด Kiosk ‼️‼️ ---
+  if (FIREWORKS_ENABLED && !isKioskMode) {
     fireworksCanvas = document.getElementById('fireworks-canvas');
-    fireworksCtx = fireworksCanvas.getContext('2d');
-    resizeFireworksCanvas(); // กำหนดขนาดเริ่มต้น
-    window.addEventListener('resize', resizeFireworksCanvas); // จัดการเมื่อหน้าจอถูกปรับขนาด
-    animateFireworks(); // เริ่มลูปแอนิเมชัน
+    if (fireworksCanvas) {
+      fireworksCtx = fireworksCanvas.getContext('2d');
+      resizeFireworksCanvas(); // กำหนดขนาดเริ่มต้น
+      window.addEventListener('resize', resizeFireworksCanvas); // จัดการเมื่อหน้าจอถูกปรับขนาด
+      animateFireworks(); // เริ่มลูปแอนิเมชัน
+    }
   }
 
   // --- เพิ่มเติม: ฟังก์ชันสำหรับควบคุมเพลง ---
@@ -1076,13 +1098,15 @@ document.addEventListener('DOMContentLoaded', (event) => {
   }
 
   // --- เพิ่มเติม: จัดการการเล่นเพลง ---
-  // 1. พยายามเล่นเพลงอัตโนมัติเมื่อโหลดหน้าเว็บ
-  toggleMusic();
-
-  // 2. หากเล่นอัตโนมัติไม่สำเร็จ ให้เริ่มเล่นเมื่อผู้ใช้คลิกครั้งแรก
-  document.body.addEventListener('click', () => {
-    if (!isMusicPlaying && backgroundMusic.paused) {
-        toggleMusic();
-    }
-  }, { once: true }); // { once: true } ทำให้ Event Listener นี้ทำงานแค่ครั้งเดียว
+  // --- ‼️‼️ แก้ไข: ไม่ต้องเล่นเพลงในโหมด Kiosk ‼️‼️ ---
+  if (!isKioskMode) {
+    // 1. พยายามเล่นเพลงอัตโนมัติเมื่อโหลดหน้าเว็บ
+    toggleMusic();
+    // 2. หากเล่นอัตโนมัติไม่สำเร็จ ให้เริ่มเล่นเมื่อผู้ใช้คลิกครั้งแรก
+    document.body.addEventListener('click', () => {
+      if (!isMusicPlaying && backgroundMusic.paused) {
+          toggleMusic();
+      }
+    }, { once: true }); // { once: true } ทำให้ Event Listener นี้ทำงานแค่ครั้งเดียว
+  }
 });

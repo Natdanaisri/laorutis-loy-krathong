@@ -1,0 +1,116 @@
+/* kiosk.css - สไตล์สำหรับโหมดจอสัมผัสโดยเฉพาะ */
+
+/* ใช้ตัวแปรจาก style.css แต่สามารถ override ได้ถ้าจำเป็น */
+:root {
+  --kiosk-max-width: 500px;
+  --kiosk-bg: rgba(255, 255, 255, 0.9);
+}
+
+.kiosk-mode {
+  /* ป้องกันไม่ให้มี scrollbar และจัดทุกอย่างกลางหน้าจอ */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Container หลัก */
+#kiosk-container {
+  width: 90%;
+  max-width: var(--kiosk-max-width);
+  background-color: var(--kiosk-bg);
+  border-radius: 20px;
+  padding: 20px 30px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+  backdrop-filter: blur(10px);
+  text-align: center;
+  /* ทำให้ container มี scrollbar ของตัวเองถ้าเนื้อหาล้น */
+  max-height: 95vh;
+  overflow-y: auto;
+}
+
+/* จัดการ scrollbar ให้สวยงาม (สำหรับ Webkit browsers) */
+#kiosk-container::-webkit-scrollbar {
+  width: 8px;
+}
+#kiosk-container::-webkit-scrollbar-track {
+  background: rgba(0,0,0,0.05);
+  border-radius: 10px;
+}
+#kiosk-container::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 10px;
+}
+#kiosk-container::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+/* โลโก้โรงเรียน */
+.school-logo {
+  margin-bottom: 15px;
+}
+.school-logo img {
+  max-width: 120px;
+  height: auto;
+}
+
+/* หัวข้อ */
+#kiosk-form-wrapper h1 {
+  font-family: var(--heading-font);
+  font-size: 2em;
+  color: var(--dark-text);
+  margin-top: 0;
+  margin-bottom: 10px;
+}
+
+#kiosk-form-wrapper p {
+  font-size: 1.1em;
+  color: #555;
+  margin-bottom: 20px;
+}
+
+/* ปรับขนาดรูปกระทงตัวอย่างในฟอร์ม */
+#kiosk-form-wrapper .krathong-image-wrapper {
+  width: 250px;
+  height: 250px;
+}
+
+/* ปรับปุ่มปล่อยกระทงให้ใหญ่และเด่น */
+#kiosk-form-wrapper #float-krathong-btn {
+  width: 100%;
+  padding: 18px 20px;
+  font-size: 1.5em;
+  font-family: var(--heading-font);
+  background-color: #4CAF50; /* สีเขียว */
+  border-radius: 12px;
+  margin-top: 20px;
+  transition: all 0.3s ease;
+}
+
+#kiosk-form-wrapper #float-krathong-btn:hover {
+  transform: scale(1.02);
+  box-shadow: 0 4px 15px rgba(76, 175, 80, 0.4);
+}
+
+/* สไตล์สำหรับหน้าขอบคุณ */
+#kiosk-thank-you-wrapper {
+  padding: 20px;
+}
+
+#kiosk-thank-you-wrapper #preview-krathong-img {
+  max-width: 200px;
+  margin-bottom: 15px;
+}
+
+/* ข้อความนับถอยหลัง */
+.reset-notice {
+  margin-top: 30px;
+  font-size: 1.1em;
+  color: #e53935; /* สีแดง */
+  font-weight: 500;
+}
+.reset-notice #countdown-timer {
+  font-weight: 700;
+  font-size: 1.2em;
+}

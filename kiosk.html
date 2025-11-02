@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ร่วมลอยกระทง - สาธิตละอออุทิศ ลำปาง (โหมดจอสัมผัส)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chonburi&family=Sarabun:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <!-- ใช้ style.css เป็นฐาน แล้วใช้ kiosk.css เขียนทับ -->
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="kiosk.css">
+</head>
+<body class="kiosk-mode">
+
+  <!-- ใช้เฉพาะวิดีโอแนวตั้งสำหรับ Kiosk -->
+  <video autoplay loop muted playsinline class="background-video" id="background-video-mobile">
+    <source src="videos/background-vertical.mp4" type="video/mp4">
+    เบราว์เซอร์ของคุณไม่รองรับวิดีโอ
+  </video>
+
+  <!-- Container หลักของ Kiosk -->
+  <div id="kiosk-container">
+
+    <!-- ส่วนฟอร์มสำหรับกรอกข้อมูล (แสดงผลเป็นค่าเริ่มต้น) -->
+    <div id="kiosk-form-wrapper">
+      <div class="school-logo">
+        <!-- ใส่โลโก้โรงเรียนที่นี่ -->
+        <img src="images/logo.png" alt="โลโก้โรงเรียนสาธิตละอออุทิศ ลำปาง">
+      </div>
+      <h1>ร่วมสืบสานประเพณีลอยกระทง</h1>
+      <p>เลือกแบบกระทงที่ชอบ แล้วใส่ชื่อและคำอธิษฐาน</p>
+      
+      <div id="krathong-selector">
+        <button id="prev-krathong-btn" class="selector-arrow">❮</button>
+        <div class="krathong-image-wrapper">
+            <img id="selected-krathong-preview" src="" alt="ตัวอย่างกระทง">
+        </div>
+        <button id="next-krathong-btn" class="selector-arrow">❯</button>
+      </div>
+      <div id="krathong-dots-container"></div>
+      
+      <input type="text" id="user-name" placeholder="ใส่ชื่อของคุณ" maxlength="50">
+      <textarea id="user-wish" placeholder="ใส่คำอธิษฐาน..." maxlength="150"></textarea>
+      
+      <!-- ปุ่มนี้จะทำงานเหมือนปุ่ม float-krathong-btn เดิม -->
+      <button id="float-krathong-btn">ปล่อยกระทง</button>
+    </div>
+
+    <!-- ส่วนแสดงข้อความขอบคุณ (ซ่อนไว้ก่อน) -->
+    <div id="kiosk-thank-you-wrapper" style="display: none;">
+        <img id="preview-krathong-img" src="" alt="Krathong Preview">
+        <p id="preview-wish-text"></p>
+        <h3 id="preview-name-text"></h3>
+        <div class="school-blessing">
+            <p>"ในวันเพ็ญเดือนสิบสองนี้ โรงเรียนสาธิตละอออุทิศ<br>
+            ขอส่งความสุขและความปรารถนาดีไปยังนักเรียน ผู้ปกครอง และบุคลากรทุกท่าน<br>
+            ขอให้แสงเทียนจากกระทงใบนี้ นำทางสู่ความสำเร็จ สว่างไสว ดั่งจันทร์วันเพ็ญ"</p>
+            <p class="school-name">- จากใจ... โรงเรียนสาธิตละอออุทิศ ลำปาง -</p>
+        </div>
+        <p class="reset-notice">หน้านี้จะเริ่มต้นใหม่ใน <span id="countdown-timer">10</span> วินาที</p>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
