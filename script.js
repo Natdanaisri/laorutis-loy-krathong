@@ -602,18 +602,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
       krathongWrapper.style.zIndex = Math.floor(100 - verticalPos);
       krathongWrapper.style.transform = `scale(${scale})`;
       // --- ‼️‼️ แก้ไข: กำหนด animation-name และล้างค่า left ที่ซ่อนไว้ออก ‼️‼️ ---
-      // --- ‼️‼️ แก้ไข: ย้ายการซ่อนกระทงมาไว้ที่นี่ และใช้ rAF เพื่อเริ่มแอนิเมชัน ‼️‼️ ---
-      // 1. ซ่อนกระทงไว้นอกจอก่อนที่จะเพิ่มเข้าไปใน DOM
-      krathongWrapper.style.left = '-9999px';
-      krathongWrapper.style.bottom = '0px';
-
-      river.appendChild(krathongWrapper);
-
       // ใช้ requestAnimationFrame เพื่อให้แน่ใจว่าเบราว์เซอร์ได้ประมวลผลสไตล์เริ่มต้น (ที่ซ่อนไว้) ก่อน
       // จากนั้นจึงกำหนดแอนิเมชันและตำแหน่งที่ถูกต้อง
       requestAnimationFrame(() => {
         krathongWrapper.style.left = ''; // ล้างค่า left ที่ซ่อนไว้ออก
-        krathongWrapper.style.left = ''; // 2. ล้างค่า left ที่ซ่อนไว้ออก
         krathongWrapper.style.animationName = `${direction}-${orientation}`;
       });
       
