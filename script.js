@@ -465,14 +465,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
     onSnapshot(q, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added") {
-          // ไม่ต้องสร้างกระทงซ้ำถ้าเป็นของตัวเอง (เพราะจะถูกจัดการโดยฟังก์ชัน saveAndFloatKrathong)
-          const myKrathongId = localStorage.getItem('myKrathongId');
-          // --- ‼️‼️ แก้ไข: เพิ่ม ID ใหม่เข้าไปในคลังสุ่มทันที ‼️‼️ ---
           const newId = change.doc.id;
+          // --- ‼️‼️ แก้ไข: เพิ่ม ID ใหม่เข้าไปในคลังสุ่มทันที (ถ้ายังไม่มี) ‼️‼️ ---
           if (!allKrathongIds.includes(newId)) {
             allKrathongIds.push(newId);
             communityKrathongPool.push(newId); // เพิ่มในคลังที่ใช้สุ่มด้วย
           }
+
+          // --- ‼️‼️ แก้ไข: ตรวจสอบ ID ของกระทงที่เพิ่งสร้างล่าสุดจาก localStorage อีกครั้ง ‼️‼️ ---
+          // เพื่อป้องกันการสร้างกระทงของตัวเองซ้ำซ้อน ซึ่งจะถูกจัดการโดยฟังก์ชัน createMyKrathongElement() อยู่แล้ว
+          const myKrathongId = localStorage.getItem('myKrathongId');
           if (change.doc.id !== myKrathongId) {
             createKrathongElement(change.doc.data());
           }
@@ -612,6 +614,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const indexInQueue = displayedKrathongs.indexOf(krathongWrapper);
         if (indexInQueue > -1) displayedKrathongs.splice(indexInQueue, 1);
       }, { once: true }); // ให้ event listener ทำงานแค่ครั้งเดียว
+
+      river.appendChild(krathongWrapper);
   }
 
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับสร้างกระทง "พิเศษ" ของเรา ‼️ ---
