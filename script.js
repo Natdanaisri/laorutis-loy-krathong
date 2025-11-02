@@ -254,6 +254,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const adminEntryBtn = document.getElementById('admin-entry-btn');
   const adminLoginModal = document.getElementById('admin-login-modal');
   const adminLoginBtn = document.getElementById('admin-login-btn');
+  const exitSpecialModeBtn = document.getElementById('exit-special-mode-btn'); // ‼️ เพิ่ม: ปุ่มออกจากโหมดพิเศษ
 
   const musicControlBtn = document.getElementById('music-control-btn');
   const backgroundMusic = document.getElementById('background-music');
@@ -349,6 +350,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
   // --- ‼️‼️ ส่วนเพิ่มเติม: Event Listeners สำหรับ Admin ‼️‼️ ---
   adminEntryBtn.addEventListener('click', () => adminLoginModal.style.display = 'block');
   adminLoginBtn.addEventListener('click', handleAdminLogin);
+  // --- ‼️‼️ ส่วนเพิ่มเติม: Event Listener สำหรับออกจากโหมดพิเศษ ‼️‼️ ---
+  exitSpecialModeBtn.addEventListener('click', exitSpecialMode);
+
   // ทำให้กด Enter ในช่อง password แล้ว login ได้
   document.getElementById('admin-password').addEventListener('keyup', (e) => { if (e.key === 'Enter') handleAdminLogin(); });
 
@@ -747,21 +751,68 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   }
 
-  // --- ‼️‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับจัดการโหมดพิเศษ (จอสัมผัส) ‼️‼️ ---
+  // --- ‼️‼️ ยกเครื่องใหม่: ฟังก์ชันสำหรับจัดการโหมดพิเศษ (จอสัมผัส) ‼️‼️ ---
   function initializeSpecialMode() {
     if (localStorage.getItem('specialModeActive') === 'true') {
       document.body.classList.add('special-touch-mode');
+      createSpecialModeUI();
     }
   }
 
   function toggleSpecialMode() {
     const isActive = document.body.classList.toggle('special-touch-mode');
     if (isActive) {
+      // --- เมื่อเปิดใช้งานโหมดพิเศษ ---
       localStorage.setItem('specialModeActive', 'true');
       showToast('เปิดใช้งานโหมดจอสัมผัส');
+      createSpecialModeUI(); // สร้าง UI ของโหมดพิเศษ
+      listModal.style.display = 'none'; // ปิดหน้าต่าง Admin
     } else {
+      // --- เมื่อปิดใช้งานโหมดพิเศษ (ผ่านรหัสผ่าน) ---
       localStorage.removeItem('specialModeActive');
       showToast('ปิดใช้งานโหมดจอสัมผัส');
+      removeSpecialModeUI(); // ลบ UI ของโหมดพิเศษ
+    }
+  }
+
+  // ฟังก์ชันสำหรับสร้างปุ่มในโหมดพิเศษ
+  function createSpecialModeUI() {
+    // ตรวจสอบว่ามี container อยู่แล้วหรือยัง
+    if (document.getElementById('special-mode-ui-container')) return;
+
+    const container = document.createElement('div');
+    container.id = 'special-mode-ui-container';
+
+    // 1. สร้างปุ่ม "ร่วมลอยกระทง"
+    const createBtnClone = createBtn.cloneNode(true); // โคลนปุ่มเดิม
+    createBtnClone.id = 'special-mode-create-btn';
+    createBtnClone.className = 'special-mode-button'; // ใช้ class ใหม่
+    createBtnClone.style.animation = 'pulse-glow 3s infinite ease-in-out';
+    createBtnClone.addEventListener('click', () => createModal.style.display = 'block');
+
+    // 2. สร้างปุ่ม "ดูคำอวยพรทั้งหมด"
+    const viewAllBtnClone = viewAllBtn.cloneNode(true);
+    viewAllBtnClone.id = 'special-mode-view-all-btn';
+    viewAllBtnClone.className = 'special-mode-button';
+    viewAllBtnClone.textContent = 'ดูคำอวยพรทั้งหมด'; // เปลี่ยนข้อความให้ชัดเจน
+    viewAllBtnClone.addEventListener('click', fetchAllKrathongsAndShowList);
+
+    container.append(createBtnClone, viewAllBtnClone);
+    document.body.appendChild(container);
+  }
+
+  // ฟังก์ชันสำหรับลบ UI ของโหมดพิเศษ
+  function removeSpecialModeUI() {
+    document.getElementById('special-mode-ui-container')?.remove();
+  }
+
+  // ฟังก์ชันสำหรับออกจากโหมดพิเศษ (ต้องใช้รหัสผ่าน)
+  function exitSpecialMode() {
+    const password = prompt("กรุณาใส่รหัสผ่านผู้ดูแลเพื่อออกจากโหมดพิเศษ:");
+    if (password === ADMIN_PASSWORD) {
+      toggleSpecialMode(); // เรียกใช้ฟังก์ชันเดิมเพื่อสลับสถานะและลบ UI
+    } else if (password !== null) { // ถ้าผู้ใช้กด OK แต่รหัสผิด
+      alert("รหัสผ่านไม่ถูกต้อง!");
     }
   }
 
@@ -792,6 +843,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const listContent = document.querySelector('#list-modal .list-content');
       const tableHeader = document.querySelector('#wish-list-table thead tr');
 
+      // ‼️‼️ แก้ไข: ถ้าอยู่ในโหมดพิเศษ ปุ่ม "ดูทั้งหมด" จะไม่แสดงปุ่ม toggle อีก
+      if (document.body.classList.contains('special-touch-mode')) {
+        // ไม่ต้องทำอะไร ปล่อยให้ตารางแสดงผลตามปกติ
+      }
+      // ถ้าไม่ได้อยู่ในโหมดพิเศษ ให้แสดงปุ่ม toggle ตามปกติ
+      else if (isAdmin) {
       if (isAdmin) {
         // เพิ่มปุ่มเปิด/ปิดโหมดพิเศษ (หากยังไม่มี)
         if (!document.getElementById('special-mode-toggle-btn')) {
