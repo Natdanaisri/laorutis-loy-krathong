@@ -147,7 +147,7 @@ body, html {
   /* --- ‼️ แก้ไข: animation จะถูกกำหนดโดย JavaScript เพื่อสุ่มทิศทาง ‼️ --- */
   animation: none 80s linear infinite;
   transform-origin: center bottom;
-  opacity: 0.9;
+  opacity: 1; /* --- ‼️ แก้ไข: ทำให้กระทงทึบแสง (ไม่โปร่งใส) ‼️ --- */
   display: flex; /* Use flexbox for centering content */
   flex-direction: column;
   justify-content: center;

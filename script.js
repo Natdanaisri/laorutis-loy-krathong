@@ -430,6 +430,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // Create a wrapper div for the krathong image and text
       const krathongWrapper = document.createElement('div');
       krathongWrapper.classList.add('floating-krathong-wrapper');
+      // --- ‼️‼️ แก้ไข: ซ่อนกระทงไว้นอกจอก่อน เพื่อป้องกันการกระพริบที่มุมซ้าย ‼️‼️ ---
+      // กำหนดตำแหน่งเริ่มต้นให้อยู่นอกจอไปไกลๆ ก่อนที่จะเริ่มแอนิเมชัน
+      krathongWrapper.style.left = '-9999px';
+      krathongWrapper.style.bottom = '0';
       
       // --- แก้ไข: ดึงรูปภาพกระทงที่ถูกต้อง ---
       // kData.krathongType จะเป็น 'krathong_1', 'krathong_2' เป็นต้น
@@ -491,15 +495,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // กระทงที่อยู่ใกล้ (ด้านล่าง, laneIndex มาก) จะใหญ่และเร็ว
       const perspectiveRatio = (laneIndex + 1) / NUMBER_OF_LANES; // ค่าระหว่าง 0.2 ถึง 1.0
       const scale = 0.6 + (perspectiveRatio * 0.5); // ขนาดจะอยู่ระหว่าง 0.7 - 1.1
-      const opacity = 0.7 + (perspectiveRatio * 0.3); // ความโปร่งใส 0.76 - 1.0
       // ปรับความเร็ว: กระทงที่อยู่ใกล้ (ใหญ่) ควรจะเร็วขึ้น (ใช้เวลาน้อยลง)
       const animationDuration = 60 + ( (1 - perspectiveRatio) * 60 ); // ระยะเวลา 60-108 วินาที
       
-      // --- ‼️‼️ แก้ไข: สุ่มทิศทางและกำหนด animation-name ที่ถูกต้อง ‼️‼️ ---
-      // สุ่มทิศทาง (0 หรือ 1)
-      const direction = Math.random() < 0.5 ? 'floatAcross' : 'floatAcrossReverse';
+      // --- ‼️‼️ แก้ไข: กำหนดให้กระทงลอยจากซ้ายไปขวาเสมอ ‼️‼️ ---
+      const direction = 'floatAcross';
       const orientation = window.matchMedia("(orientation: portrait)").matches ? 'portrait' : 'desktop';
-      krathongWrapper.style.animationName = `${direction}-${orientation}`;
 
       // สุ่มหน่วงเวลาเพื่อให้กระทงทยอยออกมา
       const delay = Math.random() * 5; // สุ่มหน่วงเวลา 0-5 วินาที
@@ -509,7 +510,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
       krathongWrapper.style.animationDelay = `${delay}s`;
       krathongWrapper.style.zIndex = 10 + laneIndex;
       krathongWrapper.style.transform = `scale(${scale})`;
-      krathongWrapper.style.opacity = opacity;
+      // --- ‼️‼️ แก้ไข: กำหนด animation-name และล้างค่า left ที่ซ่อนไว้ออก ‼️‼️ ---
+      // ใช้ requestAnimationFrame เพื่อให้แน่ใจว่าเบราว์เซอร์ได้ประมวลผลสไตล์เริ่มต้น (ที่ซ่อนไว้) ก่อน
+      // จากนั้นจึงกำหนดแอนิเมชันและตำแหน่งที่ถูกต้อง
+      requestAnimationFrame(() => {
+        krathongWrapper.style.left = ''; // ล้างค่า left ที่ซ่อนไว้ออก
+        krathongWrapper.style.animationName = `${direction}-${orientation}`;
+      });
       
       river.appendChild(krathongWrapper);
 
