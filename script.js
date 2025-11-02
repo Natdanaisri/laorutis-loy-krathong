@@ -85,11 +85,14 @@ const KRATHONG_VERTICAL_POS_MAX_DESKTOP = 45; // ตำแหน่งสูง�
 const KRATHONG_VERTICAL_POS_MIN_MOBILE = 30; // ‼️ แก้ไข: ปรับตำแหน่งต่ำสุดสำหรับจอแนวตั้ง
 const KRATHONG_VERTICAL_POS_MAX_MOBILE = 75; // ‼️ แก้ไข: ปรับตำแหน่งสูงสุดสำหรับจอแนวตั้ง
 
-// --- ‼️ ส่วนเพิ่มเติม: การจัดการเลนเพื่อป้องกันกระทงซ้อนกัน ‼️ ---
-const NUMBER_OF_LANES = 3; // แบ่งพื้นที่แสดงผลออกเป็น 3 เลน
-// --- ‼️‼️ แก้ไข: เปลี่ยนโครงสร้างการติดตามเลน ‼️‼️ ---
-// ตอนนี้จะเก็บ object ของกระทงล่าสุดในแต่ละเลน แทนการนับจำนวน
-let lanes = Array.from({ length: NUMBER_OF_LANES }, () => ({ lastKrathong: null, count: 0 }));
+// --- ‼️‼️ ตรรกะใหม่: ระบบกริด (Grid System) ‼️‼️ ---
+const GRID_COLUMNS = 3; // จำนวนเลนในแนวนอน (ตามที่คุณต้องการ)
+const GRID_ROWS = 2;    // จำนวนช่องย่อยในแนวตั้งต่อ 1 เลน
+
+// สร้างโครงสร้างข้อมูลสำหรับ Grid: Array 2 มิติ ขนาด 3x2
+// แต่ละช่อง (cell) จะเก็บ krathongElement หรือ null (ถ้าว่าง)
+let grid = Array.from({ length: GRID_COLUMNS }, () => Array(GRID_ROWS).fill(null));
+let verticalSlotPositions = []; // Array สำหรับเก็บค่า bottom ของแต่ละแถว
 
 let displayedKrathongs = []; // Array สำหรับเก็บคิวของกระทงที่แสดงอยู่
 
@@ -298,6 +301,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     // (โค้ดส่วนนี้จะทำงานเฉพาะใน index.html)
     listenForKrathongs();
     updateTotalKrathongCount();
+    // --- ‼️‼️ แก้ไข: คำนวณตำแหน่งของ "แถว" ใน Grid ‼️‼️ ---
+    calculateGridRowPositions();
     checkAndShowFindMyKrathongButton();
   }
 
@@ -467,27 +472,49 @@ document.addEventListener('DOMContentLoaded', (event) => {
     });
   }
   
+  // --- ‼️‼️ ฟังก์ชันใหม่: คำนวณตำแหน่งของ "แถว" ใน Grid ‼️‼️ ---
+  function calculateGridRowPositions() {
+    const isPortrait = window.matchMedia("(orientation: portrait)").matches;
+    let verticalMin, verticalMax;
+  
+    if (isPortrait) {
+      verticalMin = KRATHONG_VERTICAL_POS_MIN_MOBILE;
+      verticalMax = KRATHONG_VERTICAL_POS_MAX_MOBILE;
+    } else {
+      verticalMin = KRATHONG_VERTICAL_POS_MIN_DESKTOP;
+      verticalMax = KRATHONG_VERTICAL_POS_MAX_DESKTOP;
+    }
+  
+    verticalSlotPositions = []; // ล้างค่าเก่า
+    // คำนวณตำแหน่งสำหรับแต่ละแถว (Row)
+    const step = (verticalMax - verticalMin) / (GRID_ROWS - 1);
+    for (let i = 0; i < GRID_ROWS; i++) {
+      verticalSlotPositions.push(verticalMin + (i * step));
+    }
+  }
+
   function createKrathongElement(kData) {
       const river = document.getElementById('river');
 
       // --- ‼️‼️ แก้ไข: กำหนดจำนวนกระทงสูงสุดตามแนวของจอ ‼️‼️ ---
       const isPortrait = window.matchMedia("(orientation: portrait)").matches;
-      const maxKrathongsForDevice = MAX_KRATHONGS_ON_SCREEN; // ใช้ค่าสูงสุด 10 อันสำหรับทุกขนาดจอ
+      const maxKrathongsForDevice = GRID_COLUMNS * GRID_ROWS; // จำนวนกระทงสูงสุดเท่ากับขนาดของ Grid
 
       // --- ‼️‼️ แก้ไข: ตรรกะการจัดการคิวการแสดงผล ‼️‼️ ---
       // 1. ตรวจสอบว่ามีกระทง (ที่ไม่ใช่กระทงพิเศษของเรา) เกินจำนวนหรือไม่
       const communityKrathongs = displayedKrathongs.filter(k => !k.classList.contains('my-krathong-highlight'));
 
-      // เราจะเผื่อที่ไว้ 1 ที่สำหรับกระทงของเราเสมอ (จึงใช้ max - 1)
-      if (communityKrathongs.length >= maxKrathongsForDevice - 1) {
+      if (communityKrathongs.length >= maxKrathongsForDevice) {
         // 2. ถ้าเกิน, ให้ลบกระทง "ของคนอื่น" ที่เก่าที่สุดออก
         const oldestKrathong = displayedKrathongs.shift(); // ดึงตัวเก่าสุดออกจาก Array
         if (oldestKrathong) {
-            const oldLane = oldestKrathong.dataset.lane;
-            if (oldLane !== undefined) laneOccupancy[oldLane]--;
+            // --- ‼️‼️ แก้ไข: คืนช่องใน Grid ให้ว่าง ‼️‼️ ---
+            const oldCol = parseInt(oldestKrathong.dataset.col, 10);
+            const oldRow = parseInt(oldestKrathong.dataset.row, 10);
+            if (!isNaN(oldCol) && !isNaN(oldRow)) {
+              grid[oldCol][oldRow] = null;
+            }
             oldestKrathong.remove();
-            // อัปเดต Array ที่แสดงผลอยู่
-            displayedKrathongs = displayedKrathongs.filter(k => k !== oldestKrathong);
         }
       }
 
@@ -543,39 +570,28 @@ document.addEventListener('DOMContentLoaded', (event) => {
         verticalMax = KRATHONG_VERTICAL_POS_MAX_DESKTOP;
       }
 
-      // 1. หาเลนที่ว่างที่สุด
-      const laneIndex = findBestLane();
-      lanes[laneIndex].count++; // เพิ่มจำนวนกระทงในเลน
-      krathongWrapper.dataset.lane = laneIndex;
+      // --- ‼️‼️ ตรรกะใหม่: ใช้ระบบกริด (Grid System) ‼️‼️ ---
+      // 1. หาช่องที่ว่างในกริด
+      const cell = findEmptyGridCell();
+      if (!cell) return; // ถ้าไม่มีช่องว่างเลย ก็ไม่ต้องสร้างกระทง
 
-      // 2. คำนวณตำแหน่งแนวตั้งตามเลน
-      // --- ‼️‼️ แก้ไข: ปรับ Logic การคำนวณตำแหน่งเลนใหม่ ‼️‼️ ---
-      // ให้เลนกระจายตัวเต็มพื้นที่ (ล่างสุด, กลาง, บนสุด)
-      let verticalPos;
-      if (laneIndex === 0) {
-        // เลนที่ 0 (ไกลสุด) -> อยู่ตำแหน่งบนสุดของพื้นที่
-        verticalPos = verticalMax;
-      } else if (laneIndex === 1) {
-        // เลนที่ 1 (กลาง) -> อยู่ตำแหน่งกึ่งกลาง
-        verticalPos = (verticalMin + verticalMax) / 2;
-      } else { // laneIndex === 2
-        // เลนที่ 2 (ใกล้สุด) -> อยู่ตำแหน่งล่างสุดของพื้นที่
-        verticalPos = verticalMin;
-      }
-      
+      const { col, row } = cell;
+      grid[col][row] = krathongWrapper; // จองช่องในกริด
+      krathongWrapper.dataset.col = col;
+      krathongWrapper.dataset.row = row;
+
+      // 2. คำนวณตำแหน่งแนวตั้งจาก "แถว" ของกริด
+      let verticalPos = verticalSlotPositions[row];
+
       // --- ‼️ ส่วนเพิ่มเติม: จำลองมิติความลึก (Perspective) ‼️ ---
-      // กระทงที่อยู่ไกล (ด้านบน, laneIndex น้อย) จะเล็กและช้า
-      // กระทงที่อยู่ใกล้ (ด้านล่าง, laneIndex มาก) จะใหญ่และเร็ว
-      const perspectiveRatio = (laneIndex + 1) / NUMBER_OF_LANES; // ค่าระหว่าง 0.2 ถึง 1.0
+      // ใช้ "คอลัมน์" (เลน) ของกริดในการคำนวณ
+      const perspectiveRatio = (col + 1) / GRID_COLUMNS; // ค่าระหว่าง 0.33, 0.66, 1.0
       const scale = 0.6 + (perspectiveRatio * 0.5); // ขนาดจะอยู่ระหว่าง 0.7 - 1.1
-      // --- ‼️‼️ แก้ไข: เพิ่มการสุ่มความเร็วให้มากขึ้น ‼️‼️ ---
-      // กระทงที่อยู่ใกล้ (ใหญ่) จะเร็วขึ้น แต่ยังคงมีการสุ่มเพื่อความหลากหลาย
       const baseDuration = 80; // ระยะเวลาพื้นฐาน
       const perspectiveEffect = (1 - perspectiveRatio) * 60; // ผลจากมิติ (0-48s)
       const randomVariation = (Math.random() - 0.5) * 20; // สุ่ม +/- 10s
       const animationDuration = baseDuration + perspectiveEffect + randomVariation;
       
-      // --- ‼️‼️ แก้ไข: กำหนดให้กระทงลอยจากซ้ายไปขวาเสมอ ‼️‼️ ---
       const direction = 'floatAcross';
       const orientation = isPortrait ? 'portrait' : 'desktop';
 
@@ -615,18 +631,29 @@ document.addEventListener('DOMContentLoaded', (event) => {
       displayedKrathongs.push(krathongWrapper);
   }
 
-  // --- ‼️‼️ แก้ไข: ฟังก์ชันสำหรับหาเลนที่ดีที่สุด (ว่างที่สุด) ‼️‼️ ---
-  function findBestLane() {
-    let minOccupancy = Infinity;
-    let bestLane = 0;
-    // หาเลนที่มีกระทงน้อยที่สุด
-    for (let i = 0; i < NUMBER_OF_LANES; i++) {
-      if (lanes[i].count < minOccupancy) {
-        minOccupancy = lanes[i].count;
-        bestLane = i;
+  // --- ‼️‼️ ฟังก์ชันใหม่: หาช่องที่ว่างในกริด ‼️‼️ ---
+  function findEmptyGridCell() {
+    // หาคอลัมน์ (เลน) ที่มีช่องว่างมากที่สุดก่อน
+    let bestCol = -1;
+    let maxEmptySlots = -1;
+
+    for (let c = 0; c < GRID_COLUMNS; c++) {
+      const emptySlots = grid[c].filter(cell => cell === null).length;
+      if (emptySlots > maxEmptySlots) {
+        maxEmptySlots = emptySlots;
+        bestCol = c;
       }
     }
-    return bestLane;
+
+    if (bestCol === -1) return null; // ไม่มีช่องว่างเลย
+
+    // หาแถวที่ว่างในคอลัมน์ที่ดีที่สุด
+    for (let r = 0; r < GRID_ROWS; r++) {
+      if (grid[bestCol][r] === null) {
+        return { col: bestCol, row: r }; // คืนค่าตำแหน่งช่องที่ว่าง
+      }
+    }
+    return null; // ไม่ควรจะเกิดขึ้นถ้า Logic ถูกต้อง
   }
 
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับสร้างกระทง "พิเศษ" ของเรา ‼️ ---
@@ -1050,6 +1077,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     if (fireworksCanvas) {
       fireworksCanvas.width = window.innerWidth;
       fireworksCanvas.height = window.innerHeight * 0.25; // ให้ตรงกับความสูงที่กำหนดใน CSS
+      // --- ‼️‼️ ส่วนเพิ่มเติม: คำนวณตำแหน่งช่องลอยใหม่เมื่อปรับขนาดจอ ‼️‼️ ---
+      calculateGridRowPositions();
     }
   }
 
