@@ -505,6 +505,31 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }
   }
 
+  // --- ‼️‼️ ฟังก์ชันใหม่: แสดงการแจ้งเตือนในคิว และหน่วงเวลาก่อนสร้างกระทง ‼️‼️ ---
+  function showKrathongQueueNotification(kData) {
+    const queueContainer = document.getElementById('krathong-queue-container');
+    if (!queueContainer) return;
+
+    // 1. สร้าง Element สำหรับข้อความในคิว
+    const queueItem = document.createElement('div');
+    queueItem.classList.add('queue-item');
+    
+    // ตรวจสอบว่าเป็นกระทงของเราหรือไม่
+    const myKrathongId = localStorage.getItem('myKrathongId');
+    const message = (kData.id === myKrathongId) 
+      ? `กระทงของคุณ "${kData.name}" กำลังจะลอย...`
+      : `กระทงของ "${kData.name}" กำลังจะลอย...`;
+    queueItem.textContent = message;
+
+    // 2. เพิ่มเข้าในคอนเทนเนอร์ (CSS animation จะเริ่มทำงาน)
+    queueContainer.appendChild(queueItem);
+
+    // 3. หน่วงเวลา 1.5 วินาที (เพื่อให้ผู้ใช้อ่านข้อความทัน) แล้วจึงสร้างกระทงจริงๆ
+    setTimeout(() => {
+      createKrathongElement(kData);
+    }, 1500); // หน่วงเวลา 1.5 วินาที
+  }
+
   function createKrathongElement(kData) {
       const river = document.getElementById('river');
 
@@ -619,9 +644,11 @@ document.addEventListener('DOMContentLoaded', (event) => {
     if (myKrathongElement && myKrathongElement.parentNode) {
       myKrathongElement.remove();
     }
-
-    // สร้างกระทงโดยใช้ฟังก์ชันเดิม
-    createKrathongElement(kData);
+    
+    // --- ‼️‼️ แก้ไข: ไม่สร้างกระทงทันที แต่ให้ไปเข้าคิวก่อน ‼️‼️ ---
+    // เราจะใช้ฟังก์ชันใหม่เพื่อแสดงการแจ้งเตือนก่อน
+    // ฟังก์ชันนี้จะเรียก createKrathongElement() เองหลังจากหน่วงเวลา
+    showKrathongQueueNotification(kData);
 
     // หากระทงที่เพิ่งสร้าง (ตัวสุดท้ายในคิว)
     const newKrathong = displayedKrathongs[displayedKrathongs.length - 1];
