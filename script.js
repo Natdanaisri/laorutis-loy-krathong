@@ -263,11 +263,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const toggleGridBtn = document.getElementById('toggle-grid-btn'); // ‼️ เพิ่ม: ปุ่ม Grid
   const adminControlsPanel = document.getElementById('admin-controls-panel'); // ‼️ เพิ่ม: แผงควบคุม
 
-  // --- ‼️‼️ ส่วนเพิ่มเติม: Element สำหรับตัวนับตัวอักษร ‼️‼️ ---
-  const userWishTextarea = document.getElementById('user-wish');
-  const charCounterSpan = document.getElementById('char-counter');
-
-
   const musicControlBtn = document.getElementById('music-control-btn');
   const backgroundMusic = document.getElementById('background-music');
   let isMusicPlaying = false; // สถานะของเพลง
@@ -1193,5 +1188,21 @@ document.addEventListener('DOMContentLoaded', (event) => {
           toggleMusic();
       }
     }, { once: true }); // { once: true } ทำให้ Event Listener นี้ทำงานแค่ครั้งเดียว
+  }
+});
+
+// --- ‼️‼️ แก้ไข: ย้ายโค้ดตัวนับตัวอักษรมาไว้ที่นี่ เพื่อให้ทำงานได้ทั้ง 2 โหมด ‼️‼️ ---
+// รอให้ DOM โหลดเสร็จก่อน แล้วจึงค่อยหา Element และเพิ่ม Event Listener
+document.addEventListener('DOMContentLoaded', () => {
+  const userWishTextarea = document.getElementById('user-wish');
+  const charCounterSpan = document.getElementById('char-counter');
+
+  if (userWishTextarea && charCounterSpan) {
+    userWishTextarea.addEventListener('input', () => {
+      const currentLength = userWishTextarea.value.length;
+      charCounterSpan.textContent = currentLength;
+      // เปลี่ยนสีเมื่อพิมพ์ใกล้เต็มหรือเกิน
+      charCounterSpan.parentElement.style.color = currentLength > 35 ? '#d32f2f' : '#666';
+    });
   }
 });
