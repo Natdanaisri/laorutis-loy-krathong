@@ -592,13 +592,13 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // ใช้ requestAnimationFrame เพื่อให้แน่ใจว่าเบราว์เซอร์ได้ประมวลผลสไตล์เริ่มต้น (ที่ซ่อนไว้) ก่อน
       // จากนั้นจึงกำหนดแอนิเมชันและตำแหน่งที่ถูกต้อง
       // ‼️‼️ แก้ไขล่าสุด: ทำให้กระทงปรากฏ (opacity: 1) และเริ่มแอนิเมชันไปพร้อมกัน ‼️‼️
+      // ‼️‼️ แก้ไขครั้งสุดท้าย: ย้าย appendChild เข้ามาใน rAF เพื่อให้แน่ใจว่า element ถูกเพิ่มเข้า DOM ในสถานะที่พร้อมแสดงผลแล้วเท่านั้น ‼️‼️
       requestAnimationFrame(() => {
         krathongWrapper.style.opacity = 1;
         krathongWrapper.style.animationName = `${direction}-${orientation}`;
+        river.appendChild(krathongWrapper); // ย้ายมาไว้ที่นี่ เป็นคำสั่งสุดท้าย
       });
       
-      river.appendChild(krathongWrapper);
-
       // อัปเดตคิวของกระทงที่แสดงผลอยู่
       displayedKrathongs.push(krathongWrapper);
 
