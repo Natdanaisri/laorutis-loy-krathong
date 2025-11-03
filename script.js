@@ -263,6 +263,10 @@ document.addEventListener('DOMContentLoaded', (event) => {
   const toggleGridBtn = document.getElementById('toggle-grid-btn'); // ‼️ เพิ่ม: ปุ่ม Grid
   const adminControlsPanel = document.getElementById('admin-controls-panel'); // ‼️ เพิ่ม: แผงควบคุม
 
+  // --- ‼️‼️ ส่วนเพิ่มเติม: Element สำหรับตัวนับตัวอักษร ‼️‼️ ---
+  const userWishTextarea = document.getElementById('user-wish');
+  const charCounterSpan = document.getElementById('char-counter');
+
 
   const musicControlBtn = document.getElementById('music-control-btn');
   const backgroundMusic = document.getElementById('background-music');
@@ -614,8 +618,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         const indexInQueue = displayedKrathongs.indexOf(krathongWrapper);
         if (indexInQueue > -1) displayedKrathongs.splice(indexInQueue, 1);
       }, { once: true }); // ให้ event listener ทำงานแค่ครั้งเดียว
-
-      river.appendChild(krathongWrapper);
   }
 
   // --- ‼️ ส่วนเพิ่มเติม: ฟังก์ชันสำหรับสร้างกระทง "พิเศษ" ของเรา ‼️ ---

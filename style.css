@@ -609,6 +609,16 @@ textarea {
   height: 80px;
 }
 
+/* --- ‼️ ส่วนเพิ่มเติม: สไตล์สำหรับตัวนับตัวอักษร ‼️ --- */
+.char-counter-wrapper {
+  text-align: right;
+  font-size: 0.85em;
+  color: #666;
+  margin-top: -5px; /* ดึงขึ้นไปใกล้กับ textarea */
+  margin-bottom: 15px;
+  padding-right: 5px;
+}
+
 #submit-krathong-btn, #float-krathong-btn {
   background-color: #4CAF50;
   color: white;
