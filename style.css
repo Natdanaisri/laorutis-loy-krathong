@@ -159,7 +159,8 @@ body, html {
   /* animation-name, duration, และ delay ถูกกำหนดโดย script.js */
   animation: none 80s linear infinite; 
   transform-origin: center bottom;
-  opacity: 1; /* --- ‼️ แก้ไข: ทำให้กระทงทึบแสง (ไม่โปร่งใส) ‼️ --- */
+  opacity: 0; /* --- ‼️ แก้ไข: เริ่มต้นด้วยการซ่อนกระทง (ทำให้มองไม่เห็น) ‼️ --- */
+  transition: opacity 0.5s ease; /* --- ‼️ เพิ่ม: ทำให้การปรากฏตัวนุ่มนวล --- */
   display: flex; /* Use flexbox for centering content */
   flex-direction: column;
   justify-content: center;

@@ -528,10 +528,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // Create a wrapper div for the krathong image and text
       const krathongWrapper = document.createElement('div');
       krathongWrapper.classList.add('floating-krathong-wrapper');
-      // --- ‼️‼️ แก้ไข: ซ่อนกระทงไว้นอกจอก่อน เพื่อป้องกันการกระพริบที่มุมซ้าย ‼️‼️ ---
-      // กำหนดตำแหน่งเริ่มต้นให้อยู่นอกจอไปไกลๆ ก่อนที่จะเริ่มแอนิเมชัน
-      krathongWrapper.style.left = '-9999px';
-      krathongWrapper.style.bottom = '0';
       
       // --- แก้ไข: ดึงรูปภาพกระทงที่ถูกต้อง ---
       // kData.krathongType จะเป็น 'krathong_1', 'krathong_2' เป็นต้น
@@ -595,8 +591,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // --- ‼️‼️ แก้ไข: กำหนด animation-name และล้างค่า left ที่ซ่อนไว้ออก ‼️‼️ ---
       // ใช้ requestAnimationFrame เพื่อให้แน่ใจว่าเบราว์เซอร์ได้ประมวลผลสไตล์เริ่มต้น (ที่ซ่อนไว้) ก่อน
       // จากนั้นจึงกำหนดแอนิเมชันและตำแหน่งที่ถูกต้อง
+      // ‼️‼️ แก้ไขล่าสุด: ทำให้กระทงปรากฏ (opacity: 1) และเริ่มแอนิเมชันไปพร้อมกัน ‼️‼️
       requestAnimationFrame(() => {
-        krathongWrapper.style.left = ''; // ล้างค่า left ที่ซ่อนไว้ออก
+        krathongWrapper.style.opacity = 1;
         krathongWrapper.style.animationName = `${direction}-${orientation}`;
       });
       
