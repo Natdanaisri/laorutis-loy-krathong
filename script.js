@@ -492,6 +492,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
             // ‼️‼️ เพิ่ม: เพิ่ม ID ของกระทงที่เพิ่งสร้างเข้า Set ‼️‼️
             displayedKrathongIds.add(change.doc.id);
           }
+          // --- ‼️‼️ แก้ไข: อัปเดตจำนวนกระทงทั้งหมดแบบเรียลไทม์ ‼️‼️ ---
+          // เรียกฟังก์ชันนับจำนวนทุกครั้งที่มีกระทงใหม่ถูกเพิ่มเข้ามา
+          updateTotalKrathongCount();
         }
       });
     }, (error) => {
