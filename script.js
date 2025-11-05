@@ -454,13 +454,9 @@ document.addEventListener('DOMContentLoaded', (event) => {
         // ‼️‼️ เพิ่ม: เพิ่ม ID ของกระทงที่เพิ่งสร้างเข้า Set ‼️‼️
         displayedKrathongIds.add(randomId);
       }
-    } else {
-      // ‼️‼️ ลบ ID ออกจาก Set เมื่อกระทงนั้นไม่ได้ถูกสร้าง (เพราะอาจจะซ้ำ) ‼️‼️
-      displayedKrathongIds.delete(randomId);
     }
-
-    // --- ‼️‼️ ส่วนนี้ยังคงไว้: เพื่อดักฟัง "กระทงใหม่ล่าสุด" ที่เพิ่งสร้าง ‼️‼️ ---
-    // เพื่อให้ผู้ใช้คนอื่นเห็นกระทงที่เพิ่งสร้างใหม่ทันที (แสดงผลแค่ครั้งเดียว)
+    
+    // --- ‼️‼️ แก้ไข: ย้ายส่วนนี้ออกมานอกฟังก์ชัน showCommunityKrathongs เพื่อให้ทำงานได้ถูกต้อง ‼️‼️ ---
     const q = query(
       krathongCollectionRef, 
       orderBy("timestamp", "desc"), 
@@ -493,6 +489,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
     }, (error) => {
       console.error("Error listening for krathongs: ", error);
     });
+    // --- สิ้นสุดการแก้ไข ---
   }
   
   // --- ‼️‼️ ฟังก์ชันใหม่: คำนวณตำแหน่งของ "เลน" (Lane) ‼️‼️ ---
@@ -811,6 +808,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
       counterNumberElem.textContent = totalCount;
     } catch (error) {
       console.error("Error getting krathong count:", error);
+      if (counterNumberElem) counterNumberElem.textContent = 'N/A'; // ‼️‼️ เพิ่ม: แสดงผลเมื่อเกิด Error ‼️‼️
     }
   }
 
