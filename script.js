@@ -442,6 +442,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const poolIndex = Math.floor(Math.random() * communityKrathongPool.length);
       const randomId = communityKrathongPool.splice(poolIndex, 1)[0];
 
+      // --- ‼️‼️ แก้ไข: ตรวจสอบว่ากระทงที่สุ่มได้กำลังแสดงอยู่บนจอหรือไม่ ‼️‼️ ---
+      // ถ้ากระทงนี้แสดงอยู่แล้ว ให้ข้ามไปเลย ไม่ต้องทำอะไรในรอบนี้
+      if (displayedKrathongIds.has(randomId)) {
+        return;
+      }
+
       const myKrathongId = localStorage.getItem('myKrathongId');
       // 6. ไม่ต้องแสดงกระทงของตัวเองซ้ำ ถ้ามันกำลังจะถูกแสดงในฐานะ Community
       if (randomId === myKrathongId) return;
