@@ -157,7 +157,7 @@ body, html {
   height: auto;
   /* --- ‼️ แก้ไข: animation จะถูกกำหนดโดย JavaScript เพื่อสุ่มทิศทาง ‼️ --- */
   /* animation-name, duration, และ delay ถูกกำหนดโดย script.js */
-  animation: none 80s linear infinite; 
+  animation: floatAcross-desktop 80s linear infinite; 
   transform-origin: center bottom;
   opacity: 0; /* --- ‼️ แก้ไข: เริ่มต้นด้วยการซ่อนกระทง (ทำให้มองไม่เห็น) ‼️ --- */
   transition: opacity 0.5s ease; /* --- ‼️ เพิ่ม: ทำให้การปรากฏตัวนุ่มนวล --- */

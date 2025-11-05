@@ -450,7 +450,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
       const docRef = doc(db, "krathongs", randomId);
       const docSnap = await getDoc(docRef);
       if (docSnap.exists()) {
-        createKrathongElement(docSnap.data());
+        // ‼️‼️ แก้ไข: ส่ง true เพื่อบอกว่าเป็นกระทงสุ่ม (กระทงเก่า) ‼️‼️
+        createKrathongElement(docSnap.data(), true);
         // ‼️‼️ เพิ่ม: เพิ่ม ID ของกระทงที่เพิ่งสร้างเข้า Set ‼️‼️
         displayedKrathongIds.add(randomId);
       }
@@ -480,7 +481,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
             const newKrathongData = change.doc.data();
             // ‼️‼️ เพิ่ม: ส่ง ID ไปกับข้อมูลด้วย ‼️‼️
             newKrathongData.id = change.doc.id;
-            createKrathongElement(newKrathongData);
+            // ‼️‼️ แก้ไข: ไม่ส่งพารามิเตอร์ที่สอง (หรือส่ง false) เพื่อบอกว่าเป็นกระทงใหม่ ‼️‼️
+            createKrathongElement(newKrathongData, false);
             // ‼️‼️ เพิ่ม: เพิ่ม ID ของกระทงที่เพิ่งสร้างเข้า Set ‼️‼️
             displayedKrathongIds.add(change.doc.id);
           }
@@ -534,11 +536,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
     // 3. หน่วงเวลา 1.5 วินาที (เพื่อให้ผู้ใช้อ่านข้อความทัน) แล้วจึงสร้างกระทงจริงๆ
     setTimeout(() => {
-      createKrathongElement(kData);
+      // ‼️‼️ แก้ไข: ส่ง false เพื่อบอกว่าเป็นกระทงใหม่ (ไม่ใช่กระทงสุ่ม) ‼️‼️
+      createKrathongElement(kData, false);
     }, 1500); // หน่วงเวลา 1.5 วินาที
   }
 
-  function createKrathongElement(kData) {
+  // --- ‼️‼️ แก้ไข: เพิ่มพารามิเตอร์ isCommunityKrathong ‼️‼️ ---
+  // เพื่อแยกว่าเป็นกระทงที่สุ่มมา (true) หรือกระทงใหม่ (false)
+  function createKrathongElement(kData, isCommunityKrathong = false) {
       const river = document.getElementById('river');
 
       // --- ‼️‼️ เพิ่ม: ตรวจสอบจำนวนกระทงสูงสุด และป้องกันการแสดงผลซ้ำ ‼️‼️ ---
@@ -635,15 +640,23 @@ document.addEventListener('DOMContentLoaded', (event) => {
       // จากนั้นจึงกำหนดแอนิเมชันและตำแหน่งที่ถูกต้อง
       // ‼️‼️ แก้ไขล่าสุด: ทำให้กระทงปรากฏ (opacity: 1) และเริ่มแอนิเมชันไปพร้อมกัน ‼️‼️
       // ‼️‼️ แก้ไขครั้งสุดท้าย: ย้าย appendChild เข้ามาใน rAF เพื่อให้แน่ใจว่า element ถูกเพิ่มเข้า DOM ในสถานะที่พร้อมแสดงผลแล้วเท่านั้น ‼️‼️
+      // --- ‼️‼️ แก้ไขล่าสุด (อีกครั้ง): แก้ปัญหากระทงกระพริบ ‼️‼️ ---
+      // 1. เพิ่ม element เข้าไปใน DOM ก่อน ในสถานะที่ยังซ่อนอยู่ (opacity: 0)
+      river.appendChild(krathongWrapper);
+
+      // 2. ใช้ requestAnimationFrame เพื่อรอเฟรมถัดไป แล้วจึงเริ่ม animation
       requestAnimationFrame(() => {
-        // --- ‼️‼️ เพิ่ม: สุ่มตำแหน่งเริ่มต้นในแนวนอน ‼️‼️ ---
-        // ทำให้กระทงไม่ต้องเริ่มจากซ้ายสุดเสมอไป
-        const startPositionX = Math.random() * 100; // สุ่มตำแหน่งเริ่มต้น 0-100% ของความกว้างจอ
-        krathongWrapper.style.left = `${startPositionX}vw`;
+        // --- ‼️‼️ แก้ไข: ตรวจสอบว่าเป็นกระทงสุ่มหรือไม่ ‼️‼️ ---
+        if (isCommunityKrathong) { // ถ้าเป็นกระทงเก่า/สุ่ม
+          // ให้ลอยจากขอบจอ
+          krathongWrapper.style.animationName = `${direction}-${orientation}`;
+        } else { // ถ้าเป็นกระทงใหม่
+          // ให้ปรากฏ ณ ตำแหน่งสุ่ม
+          const startPositionX = Math.random() * 100;
+          krathongWrapper.style.left = `${startPositionX}vw`;
+        }
 
         krathongWrapper.style.opacity = 1;
-        krathongWrapper.style.animationName = `${direction}-${orientation}`;
-        river.appendChild(krathongWrapper); // ย้ายมาไว้ที่นี่ เป็นคำสั่งสุดท้าย
       });
 
       // อัปเดตคิวของกระทงที่แสดงผลอยู่
